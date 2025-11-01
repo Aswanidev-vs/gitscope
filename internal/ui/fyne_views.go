@@ -1,6 +1,9 @@
 package ui
 
 import (
+	"errors"
+	"fmt"
+
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/dialog"
@@ -60,11 +63,11 @@ func dashBoardPage(w fyne.Window) fyne.CanvasObject {
 	commitBtn.Resize(fyne.NewSize(100, 40))
 	commitBtn.Move(fyne.NewPos(329, 250))
 
-	// pushBtn := PushButton(w, branchEntry, output)
-	// pushBtn.Resize(fyne.NewSize(100, 40))
-	// pushBtn.Move(fyne.NewPos(439, 250))
+	pushBtn := PushButton(w)
+	pushBtn.Resize(fyne.NewSize(100, 40))
+	pushBtn.Move(fyne.NewPos(439, 250))
 
-	return container.NewWithoutLayout(initBtn, stageBtn, commitBtn, statusBtn, output)
+	return container.NewWithoutLayout(initBtn, stageBtn, commitBtn, statusBtn, pushBtn, output)
 }
 func InitButton(output *widget.Entry) *widget.Button {
 	return widget.NewButton("Init", func() {
@@ -120,5 +123,22 @@ func CommitButton(w fyne.Window) *widget.Button {
 				}
 			}
 		}, w)
+	})
+}
+func PushButton(w fyne.Window) fyne.CanvasObject {
+	return widget.NewButton("Push", func() {
+		repopath := state.RepoPath
+		if repopath == "" {
+			dialog.ShowError(errors.New("No repository selected"), w)
+			return
+		}
+
+		output, err := git.Push(repopath)
+		if err != nil {
+			dialog.ShowError(fmt.Errorf("Push failed:\n%v\n\n%s", err, output), w)
+			return
+		}
+
+		dialog.ShowInformation("Push Success", "Repository pushed successfully.", w)
 	})
 }

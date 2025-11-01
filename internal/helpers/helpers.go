@@ -9,7 +9,9 @@ import (
 	"strings"
 
 	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/dialog"
+	"fyne.io/fyne/v2/widget"
 	"github.com/gitscope/internal/git"
 	"github.com/gitscope/internal/state"
 )
@@ -105,4 +107,28 @@ func NewRepoCmd(w fyne.Window, repoPath string, cmdText string) fyne.CanvasObjec
 	}()
 
 	return nil
+}
+
+func BranchSelector(repoPath string) fyne.CanvasObject {
+	selectEntry := widget.NewSelectEntry([]string{"Loading..."})
+	selectEntry.SetPlaceHolder("Select a branch")
+
+	go func() {
+		branches, err := git.Push(repoPath)
+		if err != nil {
+			selectEntry.SetText("Error loading branches")
+			fmt.Println("Branch load error:", err)
+			return
+		}
+
+		selectEntry.SetOptions(branches)
+		if len(branches) > 0 {
+			selectEntry.SetText(branches[0]) // default to first branch
+		}
+	}()
+
+	return container.NewVBox(
+		widget.NewLabel("Available Branches"),
+		selectEntry,
+	)
 }

@@ -2,6 +2,7 @@ package git
 
 import (
 	"errors"
+	"fmt"
 	"os/exec"
 	"strings"
 
@@ -47,4 +48,28 @@ func Stage() (string, error) {
 		return string(out), err
 	}
 	return "Files staged successfully.", nil
+}
+func Push(repoPath string) ([]string, error) {
+	cmd := exec.Command("git", "branch", "--list")
+	cmd.Dir = repoPath
+
+	output, err := cmd.Output()
+	if err != nil {
+		return nil, fmt.Errorf("failed to list branches: %w", err)
+	}
+
+	lines := strings.Split(string(output), "\n")
+	var branches []string
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+		if line == "" {
+			continue
+		}
+		// Remove leading "* " from current branch
+		if after, ok := strings.CutPrefix(line, "* "); ok {
+			line = after
+		}
+		branches = append(branches, line)
+	}
+	return branches, nil
 }
