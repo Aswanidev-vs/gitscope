@@ -127,11 +127,11 @@ func CommitButton(w fyne.Window) *widget.Button {
 	})
 }
 func PushButton(w fyne.Window) fyne.CanvasObject {
-	repopath := state.RepoPath
-	branchSelectorUI, getBranch := helpers.BranchSelector(repopath)
+
+	branchSelectorUI, getBranch := helpers.BranchSelector(state.RepoPath)
 
 	pushBtn := widget.NewButton("Push", func() {
-		if repopath == "" {
+		if state.RepoPath == "" {
 			dialog.ShowError(errors.New("No repository selected"), w)
 			return
 		}
@@ -142,7 +142,7 @@ func PushButton(w fyne.Window) fyne.CanvasObject {
 			return
 		}
 
-		output, err := git.Push(repopath, branch)
+		output, err := git.Push(state.RepoPath, branch)
 		if err != nil {
 			dialog.ShowError(fmt.Errorf("Push failed:\n%v\n\n%s", err, output), w)
 			return
