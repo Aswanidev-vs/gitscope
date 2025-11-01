@@ -14,6 +14,7 @@ import (
 	"fyne.io/fyne/v2/widget"
 
 	"github.com/gitscope/internal/git"
+
 	"github.com/gitscope/internal/state"
 )
 
@@ -157,7 +158,7 @@ func BranchSelector(repoPath string) (fyne.CanvasObject, func() string) {
 	}
 
 	ui := container.NewVBox(
-		widget.NewLabel("Available Branches"),
+		// widget.NewLabel("Available Branches"),
 		selectEntry,
 	)
 
