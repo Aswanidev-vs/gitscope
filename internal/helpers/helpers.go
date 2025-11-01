@@ -12,6 +12,7 @@ import (
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/widget"
+
 	"github.com/gitscope/internal/git"
 	"github.com/gitscope/internal/state"
 )
@@ -108,13 +109,37 @@ func NewRepoCmd(w fyne.Window, repoPath string, cmdText string) fyne.CanvasObjec
 
 	return nil
 }
+func ListPush(repoPath string) ([]string, error) {
+	cmd := exec.Command("git", "branch", "--list")
+	cmd.Dir = repoPath
 
-func BranchSelector(repoPath string) fyne.CanvasObject {
+	output, err := cmd.Output()
+	if err != nil {
+		return nil, fmt.Errorf("failed to list branches: %w", err)
+	}
+
+	lines := strings.Split(string(output), "\n")
+	var branches []string
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+		if line == "" {
+			continue
+		}
+		// Remove leading "* " from current branch
+		if after, ok := strings.CutPrefix(line, "* "); ok {
+			line = after
+		}
+		branches = append(branches, line)
+	}
+	return branches, nil
+}
+
+func BranchSelector(repoPath string) (fyne.CanvasObject, func() string) {
 	selectEntry := widget.NewSelectEntry([]string{"Loading..."})
 	selectEntry.SetPlaceHolder("Select a branch")
 
 	go func() {
-		branches, err := git.Push(repoPath)
+		branches, err := ListPush(repoPath)
 		if err != nil {
 			selectEntry.SetText("Error loading branches")
 			fmt.Println("Branch load error:", err)
@@ -123,12 +148,18 @@ func BranchSelector(repoPath string) fyne.CanvasObject {
 
 		selectEntry.SetOptions(branches)
 		if len(branches) > 0 {
-			selectEntry.SetText(branches[0]) // default to first branch
+			selectEntry.SetText(branches[0])
 		}
 	}()
 
-	return container.NewVBox(
+	getSelectedBranch := func() string {
+		return strings.TrimSpace(selectEntry.Text)
+	}
+
+	ui := container.NewVBox(
 		widget.NewLabel("Available Branches"),
 		selectEntry,
 	)
+
+	return ui, getSelectedBranch
 }

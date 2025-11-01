@@ -49,27 +49,11 @@ func Stage() (string, error) {
 	}
 	return "Files staged successfully.", nil
 }
-func Push(repoPath string) ([]string, error) {
-	cmd := exec.Command("git", "branch", "--list")
-	cmd.Dir = repoPath
-
-	output, err := cmd.Output()
+func Push(repoPath, branch string) (string, error) {
+	cmd := exec.Command("git", "-C", repoPath, "push", "origin", branch)
+	out, err := cmd.CombinedOutput()
 	if err != nil {
-		return nil, fmt.Errorf("failed to list branches: %w", err)
+		return string(out), fmt.Errorf("push failed: %v\n%s", err, string(out))
 	}
-
-	lines := strings.Split(string(output), "\n")
-	var branches []string
-	for _, line := range lines {
-		line = strings.TrimSpace(line)
-		if line == "" {
-			continue
-		}
-		// Remove leading "* " from current branch
-		if after, ok := strings.CutPrefix(line, "* "); ok {
-			line = after
-		}
-		branches = append(branches, line)
-	}
-	return branches, nil
+	return string(out), nil
 }

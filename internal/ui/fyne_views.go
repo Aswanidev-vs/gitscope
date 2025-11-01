@@ -10,6 +10,7 @@ import (
 	"fyne.io/fyne/v2/widget"
 	core "github.com/gitscope/internal/core"
 	"github.com/gitscope/internal/git"
+	"github.com/gitscope/internal/helpers"
 	"github.com/gitscope/internal/state"
 )
 
@@ -133,7 +134,15 @@ func PushButton(w fyne.Window) fyne.CanvasObject {
 			return
 		}
 
-		output, err := git.Push(repopath)
+		_, getBranch := helpers.BranchSelector(repopath)
+		branch := getBranch()
+
+		if branch == "" {
+			dialog.ShowError(errors.New("No branch selected"), w)
+			return
+		}
+
+		output, err := git.Push(repopath, branch)
 		if err != nil {
 			dialog.ShowError(fmt.Errorf("Push failed:\n%v\n\n%s", err, output), w)
 			return
