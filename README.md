@@ -1,4 +1,0 @@
-#gitscope
-\"# gitscope\" 
-\"# gitscope\" 
-\"# gitscope\" 
