@@ -1,1 +1,3 @@
-new readme
+new readme\"# gitscope\" 
+\"# gitscope\" 
+\"# gitscope\" 

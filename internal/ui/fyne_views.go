@@ -45,6 +45,7 @@ func RepositoryPage(w fyne.Window) fyne.CanvasObject {
 
 func dashBoardPage(w fyne.Window) fyne.CanvasObject {
 	output := widget.NewMultiLineEntry()
+
 	output.Resize(fyne.NewSize(500, 230))
 	output.Move(fyne.NewPos(0, 1))
 

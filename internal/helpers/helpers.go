@@ -55,7 +55,6 @@ func NewRepoCmd(w fyne.Window, repoPath string, cmdText string) fyne.CanvasObjec
 
 			fmt.Println("Running:", line)
 
-			// Special handling for git commit
 			if strings.HasPrefix(line, "git commit") {
 				msg := ""
 				if parts := strings.SplitN(line, "-m", 2); len(parts) == 2 {
@@ -63,6 +62,15 @@ func NewRepoCmd(w fyne.Window, repoPath string, cmdText string) fyne.CanvasObjec
 				}
 
 				output, err := git.Commit(msg)
+				outStr := string(output)
+
+				// ✅ Ignore harmless commit warnings
+				if strings.Contains(outStr, "no changes added to commit") ||
+					strings.Contains(outStr, "no staged changes to commit") {
+					fmt.Println("⚠️ Ignored: no new changes to commit.")
+					continue
+				}
+
 				if err != nil {
 					errMsg := fmt.Sprintf("❌ Commit failed: %v\n%s", err, output)
 					fmt.Println(errMsg)
