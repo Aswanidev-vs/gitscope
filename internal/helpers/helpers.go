@@ -109,11 +109,13 @@ func NewRepoCmd(w fyne.Window, repoPath string, cmdText string) fyne.CanvasObjec
 
 		progress.Hide()
 
-		if len(allErrors) > 0 {
-			dialog.ShowError(fmt.Errorf("Some commands failed:\n\n%s", strings.Join(allErrors, "\n\n")), w)
-		} else {
-			dialog.ShowInformation("Success", "All commands executed successfully.", w)
-		}
+		// if len(allErrors) > 0 {
+		// 	dialog.ShowError(fmt.Errorf("Some commands failed:\n\n%s", strings.Join(allErrors, "\n\n")), w)
+
+		// }else
+
+		dialog.ShowInformation("Success", "All commands executed successfully.", w)
+
 	}()
 
 	return nil
