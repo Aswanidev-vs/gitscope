@@ -59,6 +59,9 @@ func Commit(msg string) (string, error) {
 
 // Stage adds all modified/untracked files to the Git index (staging area)
 func Stage() (string, error) {
+	if state.RepoPath == "" {
+		return "", errors.New("no repository path selected")
+	}
 	cmd := exec.Command("git", "-C", state.RepoPath, "add", ".")
 	out, err := cmd.CombinedOutput()
 
