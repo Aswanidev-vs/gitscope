@@ -137,8 +137,8 @@ func CommitButton(w fyne.Window) *widget.Button {
 	})
 }
 func PushButton(w fyne.Window) fyne.CanvasObject {
-	branchSelectorUI, getBranch := helpers.BranchSelector(state.RepoPath)
 
+	branchSelectorUI, getBranch := helpers.BranchSelector(state.RepoPath)
 	pushBtn := widget.NewButton("Push", func() {
 		if state.RepoPath == "" {
 			dialog.ShowError(errors.New("No repository selected"), w)
@@ -150,21 +150,18 @@ func PushButton(w fyne.Window) fyne.CanvasObject {
 			dialog.ShowError(errors.New("No branch selected"), w)
 			return
 		}
-
 		progress := dialog.NewProgressInfinite("Running Commands", "Please wait while commands are executing...", w)
-		progress.Show()
 
 		go func() {
+			progress.Show()
 			output, err := git.Push(state.RepoPath, branch)
-			defer progress.Hide()
-
 			if err != nil {
 				dialog.ShowError(fmt.Errorf("Push failed:\n%v\n\n%s", err, output), w)
 				return
 			}
+			progress.Hide()
+			dialog.ShowInformation("Push Success", "Repository pushed successfully.", w)
 
-			successMsg := fmt.Sprintf("Repository pushed successfully to branch '%s'.\n\nGit Output:\n%s", branch, output)
-			dialog.ShowInformation("Push Success", successMsg, w)
 		}()
 	})
 
@@ -194,7 +191,7 @@ func RevertButton(w fyne.Window, repoPath string) *widget.Button {
 			{Widget: input},
 		}
 
-		dialog.ShowForm("Revert Commit Hash", "Revert", "Cancel", form, func(valid bool) {
+		dialog.ShowForm("Revert Commit hash", "Revert", "Cancel", form, func(valid bool) {
 			if !valid {
 				return
 			}
