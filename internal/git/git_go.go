@@ -41,14 +41,24 @@ func Commit(msg string) (string, error) {
 	return string(out), err
 }
 
+// Stage adds all modified/untracked files to the Git index (staging area)
 func Stage() (string, error) {
 	cmd := exec.Command("git", "-C", state.RepoPath, "add", ".")
 	out, err := cmd.CombinedOutput()
+
 	if err != nil {
-		return string(out), err
+		// Return full Git output for accurate debugging
+		return string(out), fmt.Errorf("%v\n%s", err, string(out))
 	}
-	return "Files staged successfully.", nil
+
+	// Usually, git add . returns no output unless something goes wrong
+	if len(out) == 0 {
+		return "All changes staged successfully.", nil
+	}
+
+	return string(out), nil
 }
+
 func Push(repoPath, branch string) (string, error) {
 	cmd := exec.Command("git", "-C", repoPath, "push", "origin", branch)
 	out, err := cmd.CombinedOutput()
