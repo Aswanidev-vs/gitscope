@@ -58,11 +58,19 @@ func Push(repoPath, branch string) (string, error) {
 	return string(out), nil
 }
 func Log(repoPath string) (string, error) {
-	cmd := exec.Command("git", "-C", repoPath, "log", "--online")
+	cmd := exec.Command("git", "-C", repoPath, "log", "--oneline")
 	out, err := cmd.CombinedOutput()
 
 	if err != nil {
 		return string(out), fmt.Errorf("log failed:%v\n%s", err, string(out))
+	}
+	return string(out), nil
+}
+func Revert(repoPath string) (string, error) {
+	cmd := exec.Command("git", "-C", repoPath, "revert", "--no-edit")
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		return string(out), fmt.Errorf("Revert failed:%v\n%s", err, string(out))
 	}
 	return string(out), nil
 }

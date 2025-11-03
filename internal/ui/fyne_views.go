@@ -72,7 +72,12 @@ func dashBoardPage(w fyne.Window) fyne.CanvasObject {
 	logBtn := LogButton(output)
 	logBtn.Resize(fyne.NewSize(100, 40))
 	logBtn.Move(fyne.NewPos(1, 350))
-	return container.NewWithoutLayout(initBtn, stageBtn, commitBtn, statusBtn, pushBtn, logBtn, output)
+
+	revertBtn := RevertButton(output)
+	revertBtn.Resize(fyne.NewSize(100, 40))
+	revertBtn.Move(fyne.NewPos(110, 350))
+
+	return container.NewWithoutLayout(initBtn, stageBtn, commitBtn, statusBtn, pushBtn, logBtn, revertBtn, output)
 }
 func InitButton(output *widget.Entry) *widget.Button {
 	return widget.NewButton("Init", func() {
@@ -133,15 +138,18 @@ func CommitButton(w fyne.Window) *widget.Button {
 func PushButton(w fyne.Window) fyne.CanvasObject {
 
 	branchSelectorUI, getBranch := helpers.BranchSelector(state.RepoPath)
+
 	pushBtn := widget.NewButton("Push", func() {
 		if state.RepoPath == "" {
 			dialog.ShowError(errors.New("No repository selected"), w)
 			return
 		}
+
 		progress := dialog.NewProgressInfinite("Running Commands", "Please wait while commands are executing...", w)
 
 		go func() {
 			progress.Show()
+			defer progress.Hide() // ensures the progress bar stops no matter what
 
 			branch := getBranch()
 			if branch == "" {
@@ -149,14 +157,21 @@ func PushButton(w fyne.Window) fyne.CanvasObject {
 				return
 			}
 
+			// ✅ Check if the branch actually exists
+			_, err := helpers.ListPush(branch)
+			if err != nil {
+				dialog.ShowError(fmt.Errorf("Failed to check branches: %v", err), w)
+				return
+			}
+
+			// ✅ Perform the push
 			output, err := git.Push(state.RepoPath, branch)
 			if err != nil {
 				dialog.ShowError(fmt.Errorf("Push failed:\n%v\n\n%s", err, output), w)
 				return
 			}
-			progress.Hide()
-			dialog.ShowInformation("Push Success", "Repository pushed successfully.", w)
 
+			dialog.ShowInformation("Push Success", "Repository pushed successfully.", w)
 		}()
 	})
 
@@ -171,6 +186,16 @@ func LogButton(output *widget.Entry) *widget.Button {
 		out, err := git.Log(state.RepoPath)
 		if err != nil {
 			output.SetText("error: " + err.Error())
+		} else {
+			output.SetText(out)
+		}
+	})
+}
+func RevertButton(output *widget.Entry) *widget.Button {
+	return widget.NewButton("Revert", func() {
+		out, err := git.Revert(state.RepoPath)
+		if err != nil {
+			output.SetText("error:" + err.Error())
 		} else {
 			output.SetText(out)
 		}
