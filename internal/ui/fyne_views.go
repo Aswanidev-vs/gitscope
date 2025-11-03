@@ -137,33 +137,36 @@ func CommitButton(w fyne.Window) *widget.Button {
 	})
 }
 func PushButton(w fyne.Window) fyne.CanvasObject {
-
 	branchSelectorUI, getBranch := helpers.BranchSelector(state.RepoPath)
+
 	pushBtn := widget.NewButton("Push", func() {
 		if state.RepoPath == "" {
 			dialog.ShowError(errors.New("No repository selected"), w)
 			return
 		}
+
+		branch := getBranch()
+		if branch == "" {
+			dialog.ShowError(errors.New("No branch selected"), w)
+			return
+		}
+
 		progress := dialog.NewProgressInfinite("Running Commands", "Please wait while commands are executing...", w)
+		progress.Show()
 
 		go func() {
-			progress.Show()
-
-			branch := getBranch()
-			if branch == "" {
-				dialog.ShowError(errors.New("No branch selected"), w)
-				return
-			}
-
 			output, err := git.Push(state.RepoPath, branch)
+
+			// Ensure progress is hidden regardless of outcome
+			defer progress.Hide()
+
 			if err != nil {
 				dialog.ShowError(fmt.Errorf("Push failed:\n%v\n\n%s", err, output), w)
 				return
 			}
-			progress.Hide()
+
 			dialog.ShowInformation("Push Success", "Repository pushed successfully.", w)
 		}()
-
 	})
 
 	return container.NewVBox(
