@@ -10,7 +10,11 @@ import (
 )
 
 func Init() (string, error) {
-	out, err := exec.Command("git", "init").Output()
+	if state.RepoPath == "" {
+		return "", errors.New("no repository path selected")
+	}
+	cmd := exec.Command("git", "-C", state.RepoPath, "init")
+	out, err := cmd.Output()
 	return string(out), err
 }
 func Status() (string, error) {
