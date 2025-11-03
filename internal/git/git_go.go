@@ -66,11 +66,13 @@ func Log(repoPath string) (string, error) {
 	}
 	return string(out), nil
 }
+
 func Revert(repoPath, sha string) (string, error) {
 	cmd := exec.Command("git", "-C", repoPath, "revert", "--no-edit", sha)
 	out, err := cmd.CombinedOutput()
 	if err != nil {
-		return string(out), fmt.Errorf("Revert failed:%v\n%s", err, string(out))
+		// Return the actual Git output directly for clarity
+		return string(out), fmt.Errorf("%v\n%s", err, string(out))
 	}
 	return string(out), nil
 }

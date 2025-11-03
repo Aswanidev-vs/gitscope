@@ -191,23 +191,19 @@ func RevertButton(w fyne.Window, repoPath string) *widget.Button {
 			{Widget: input},
 		}
 
-		dialog.ShowForm("Revert Commit", "Revert", "Cancel", form, func(valid bool) {
+		dialog.ShowForm("Revert Commit Hash", "Revert", "Cancel", form, func(valid bool) {
 			if !valid {
 				return
 			}
 
 			sha := strings.TrimSpace(input.Text)
 			if sha == "" {
-				dialog.ShowInformation("Empty SHA", "Commit hash cannot be empty", w)
+				dialog.ShowInformation("Empty SHA", "Commit hash cannot be empty.", w)
 				return
 			}
 
 			out, err := git.Revert(repoPath, sha)
 			if err != nil {
-				if strings.Contains(out, "bad revision") {
-					dialog.ShowInformation("Invalid Commit", "The entered commit hash does not exist.\nPlease check your commit log and try again.", w)
-					return
-				}
 				dialog.ShowError(err, w)
 				return
 			}
