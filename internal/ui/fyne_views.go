@@ -3,6 +3,7 @@ package ui
 import (
 	"errors"
 	"fmt"
+	"strings"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
@@ -73,7 +74,7 @@ func dashBoardPage(w fyne.Window) fyne.CanvasObject {
 	logBtn.Resize(fyne.NewSize(100, 40))
 	logBtn.Move(fyne.NewPos(1, 350))
 
-	revertBtn := RevertButton(w)
+	revertBtn := RevertButton(w, state.RepoPath)
 	revertBtn.Resize(fyne.NewSize(100, 40))
 	revertBtn.Move(fyne.NewPos(110, 350))
 
@@ -180,30 +181,31 @@ func LogButton(output *widget.Entry) *widget.Button {
 		}
 	})
 }
-func RevertButton(w fyne.Window) *widget.Button {
+func RevertButton(w fyne.Window, repoPath string) *widget.Button {
 	return widget.NewButton("Revert", func() {
 		input := widget.NewEntry()
-		input.SetPlaceHolder("e.g. a1s4fd6") // optional placeholder
-		input.Resize(fyne.NewSize(300, 40))  // set width & height
+		input.SetPlaceHolder("e.g. a1s4fd6")
+		input.Resize(fyne.NewSize(300, 40))
 
 		form := []*widget.FormItem{
-			{Text: "", Widget: input},
+			{Text: "Enter Commit Hash (<SHA>)", Widget: input},
 		}
 
-		dialog.ShowForm("Enter Commit Hash (<SHA>)", "Revert", "Cancel", form, func(valid bool) {
+		dialog.ShowForm("Revert Commit", "Revert", "Cancel", form, func(valid bool) {
 			if valid {
-				msg := input.Text
-				if msg == "" {
+				sha := strings.TrimSpace(input.Text)
+				if sha == "" {
 					dialog.ShowInformation("Empty SHA", "Commit hash cannot be empty", w)
 					return
 				}
 
-				out, err := git.Revert(state.RepoPath, msg)
+				out, err := git.Revert(repoPath, sha)
 				if err != nil {
 					dialog.ShowError(err, w)
-				} else {
-					dialog.ShowInformation("Revert Result", out, w)
+					return
 				}
+
+				dialog.ShowInformation("Revert Successful", out, w)
 			}
 		}, w)
 	})
