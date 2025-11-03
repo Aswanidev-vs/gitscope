@@ -73,7 +73,7 @@ func dashBoardPage(w fyne.Window) fyne.CanvasObject {
 	logBtn.Resize(fyne.NewSize(100, 40))
 	logBtn.Move(fyne.NewPos(1, 350))
 
-	revertBtn := RevertButton(output)
+	revertBtn := RevertButton(w)
 	revertBtn.Resize(fyne.NewSize(100, 40))
 	revertBtn.Move(fyne.NewPos(110, 350))
 
@@ -180,13 +180,31 @@ func LogButton(output *widget.Entry) *widget.Button {
 		}
 	})
 }
-func RevertButton(output *widget.Entry) *widget.Button {
+func RevertButton(w fyne.Window) *widget.Button {
 	return widget.NewButton("Revert", func() {
-		out, err := git.Revert(state.RepoPath)
-		if err != nil {
-			output.SetText("error:" + err.Error())
-		} else {
-			output.SetText(out)
+		input := widget.NewEntry()
+		input.SetPlaceHolder("e.g. a1s4fd6") // optional placeholder
+		input.Resize(fyne.NewSize(300, 40))  // set width & height
+
+		form := []*widget.FormItem{
+			{Text: "", Widget: input},
 		}
+
+		dialog.ShowForm("Enter Commit Hash (<SHA>)", "Revert", "Cancel", form, func(valid bool) {
+			if valid {
+				msg := input.Text
+				if msg == "" {
+					dialog.ShowInformation("Empty SHA", "Commit hash cannot be empty", w)
+					return
+				}
+
+				out, err := git.Revert(state.RepoPath, msg)
+				if err != nil {
+					dialog.ShowError(err, w)
+				} else {
+					dialog.ShowInformation("Revert Result", out, w)
+				}
+			}
+		}, w)
 	})
 }

@@ -174,11 +174,3 @@ func BranchSelector(repoPath string) (fyne.CanvasObject, func() string) {
 
 	return ui, getSelectedBranch
 }
-
-// func RevertChoose(w fyne.Window) (fyne.CanvasObject, func() string) {
-
-// 	ed := widget.NewSelect([]string{"--no-edit"}, func(s string) {
-// 		fmt.Printf("selected %s to live forever..", s)
-// 		return w.SetContent(ed)
-// 	})
-// }
