@@ -1,7 +1,9 @@
 package main
 
-import ("github.com/gitscope/internal/ui")
+import (
+	"github.com/gitscope/internal/ui"
+)
 
-func main(){
-ui.App()
+func main() {
+	ui.App()
 }
