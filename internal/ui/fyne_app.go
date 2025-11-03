@@ -31,7 +31,7 @@ func App() {
 	myApp.Settings().SetTheme(&CustomTheme{theme.DefaultTheme()})
 	myWindow := myApp.NewWindow("Gitscope")
 
-	logo, err := os.ReadFile("../../assets/icons/gitscope_logo_v6.png")
+	logo, err := os.ReadFile("assets/icons/gitscope_logo_v6.png")
 	if err != nil {
 		log.Println("Error reading icon file ", err)
 	} else {
