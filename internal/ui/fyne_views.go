@@ -160,8 +160,8 @@ func PushButton(w fyne.Window) fyne.CanvasObject {
 				return
 			}
 			progress.Hide()
+			dialog.ShowInformation("Push Success", "Repository pushed successfully.", w)
 		}()
-		dialog.ShowInformation("Push Success", "Repository pushed successfully.", w)
 
 	})
 
