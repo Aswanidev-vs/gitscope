@@ -144,12 +144,12 @@ func PushButton(w fyne.Window) fyne.CanvasObject {
 			dialog.ShowError(errors.New("No repository selected"), w)
 			return
 		}
-
 		branch := getBranch()
 		if branch == "" {
 			dialog.ShowError(errors.New("No branch selected"), w)
 			return
 		}
+
 		progress := dialog.NewProgressInfinite("Running Commands", "Please wait while commands are executing...", w)
 
 		go func() {

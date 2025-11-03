@@ -84,5 +84,7 @@ func Revert(repoPath, sha string) (string, error) {
 		// Return the actual Git output directly for clarity
 		return string(out), fmt.Errorf("%v\n%s", err, string(out))
 	}
-	return string(out), nil
+	stage := exec.Command("git", "-C", state.RepoPath, "add", ".")
+	outs, err := stage.CombinedOutput()
+	return string(outs), nil
 }
