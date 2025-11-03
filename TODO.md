@@ -1,0 +1,2 @@
+- [x] Fix Init() function in internal/git/git_go.go to use state.RepoPath and add repo path check
+- [x] Test the fix by building and running the app
