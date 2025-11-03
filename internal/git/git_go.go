@@ -105,6 +105,17 @@ func Revert(commitHash string) (string, error) {
 	if err := checkRepo.Run(); err != nil {
 		return "", errors.New("invalid Git repository path")
 	}
+	// Auto-stash uncommitted changes
+	stashCmd := exec.Command("git", "-C", state.RepoPath, "stash", "--include-untracked")
+	stashOut, _ := stashCmd.CombinedOutput()
+
+	cmd := exec.Command("git", "-C", state.RepoPath, "revert", "--no-edit", commitHash)
+	output, err := cmd.CombinedOutput()
+
+	// Restore stash if it existed
+	if !strings.Contains(string(stashOut), "No local changes") {
+		exec.Command("git", "-C", state.RepoPath, "stash", "pop").Run()
+	}
 
 	// 2️⃣ Check for uncommitted changes before revert
 	checkChanges := exec.Command("git", "-C", state.RepoPath, "status", "--porcelain")
@@ -112,10 +123,6 @@ func Revert(commitHash string) (string, error) {
 	if strings.TrimSpace(string(out)) != "" {
 		return "", errors.New("uncommitted changes present — please commit or stash before reverting")
 	}
-
-	// 3️⃣ Run the revert command
-	cmd := exec.Command("git", "-C", state.RepoPath, "revert", "--no-edit", commitHash)
-	output, err := cmd.CombinedOutput()
 
 	return string(output), err
 }
