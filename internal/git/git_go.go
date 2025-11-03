@@ -57,3 +57,12 @@ func Push(repoPath, branch string) (string, error) {
 	}
 	return string(out), nil
 }
+func Log(repoPath string) (string, error) {
+	cmd := exec.Command("git", "-C", repoPath, "log")
+	out, err := cmd.CombinedOutput()
+
+	if err != nil {
+		return string(out), fmt.Errorf("log failed:%v\n%s", err, string(out))
+	}
+	return string(out), nil
+}

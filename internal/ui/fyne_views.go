@@ -69,7 +69,10 @@ func dashBoardPage(w fyne.Window) fyne.CanvasObject {
 	pushBtn.Resize(fyne.NewSize(100, 40))
 	pushBtn.Move(fyne.NewPos(439, 250))
 
-	return container.NewWithoutLayout(initBtn, stageBtn, commitBtn, statusBtn, pushBtn, output)
+	logBtn := LogButton(output)
+	logBtn.Resize(fyne.NewSize(100, 40))
+	logBtn.Move(fyne.NewPos(1, 350))
+	return container.NewWithoutLayout(initBtn, stageBtn, commitBtn, statusBtn, pushBtn, logBtn, output)
 }
 func InitButton(output *widget.Entry) *widget.Button {
 	return widget.NewButton("Init", func() {
@@ -161,4 +164,15 @@ func PushButton(w fyne.Window) fyne.CanvasObject {
 		pushBtn,
 		branchSelectorUI,
 	)
+}
+
+func LogButton(output *widget.Entry) *widget.Button {
+	return widget.NewButton("Log", func() {
+		out, err := git.Log(state.RepoPath)
+		if err != nil {
+			output.SetText("error: " + err.Error())
+		} else {
+			output.SetText(out)
+		}
+	})
 }
