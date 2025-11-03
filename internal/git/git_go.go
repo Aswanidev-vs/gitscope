@@ -18,18 +18,21 @@ func Status() (string, error) {
 	out, err := cmd.CombinedOutput()
 	return string(out), err
 }
+
+// Commit creates a new commit with the given message.
 func Commit(msg string) (string, error) {
-	if strings.TrimSpace(msg) == "" {
+	msg = strings.TrimSpace(msg)
+	if msg == "" {
 		return "", errors.New("commit message cannot be empty")
 	}
 
-	// Check if repo path is valid
+	// Validate repo path
 	checkCmd := exec.Command("git", "-C", state.RepoPath, "rev-parse", "--is-inside-work-tree")
 	if err := checkCmd.Run(); err != nil {
 		return "", errors.New("invalid Git repository path")
 	}
 
-	// Check if there are staged changes
+	// Check for staged changes
 	statusCmd := exec.Command("git", "-C", state.RepoPath, "diff", "--cached", "--quiet")
 	if err := statusCmd.Run(); err == nil {
 		return "", errors.New("no staged changes to commit")
@@ -38,7 +41,16 @@ func Commit(msg string) (string, error) {
 	// Proceed with commit
 	cmd := exec.Command("git", "-C", state.RepoPath, "commit", "-m", msg)
 	out, err := cmd.CombinedOutput()
-	return string(out), err
+
+	if err != nil {
+		return string(out), fmt.Errorf("commit failed: %v\n%s", err, string(out))
+	}
+
+	if len(out) == 0 {
+		return "Commit completed successfully.", nil
+	}
+
+	return string(out), nil
 }
 
 // Stage adds all modified/untracked files to the Git index (staging area)
@@ -76,15 +88,27 @@ func Log(repoPath string) (string, error) {
 	}
 	return string(out), nil
 }
-
-func Revert(repoPath, sha string) (string, error) {
-	cmd := exec.Command("git", "-C", repoPath, "revert", "--no-edit", sha)
-	out, err := cmd.CombinedOutput()
-	if err != nil {
-		// Return the actual Git output directly for clarity
-		return string(out), fmt.Errorf("%v\n%s", err, string(out))
+func Revert(commitHash string) (string, error) {
+	if strings.TrimSpace(commitHash) == "" {
+		return "", errors.New("commit hash cannot be empty")
 	}
-	stage := exec.Command("git", "-C", state.RepoPath, "add", ".")
-	outs, err := stage.CombinedOutput()
-	return string(outs), nil
+
+	// 1️⃣ Validate repository
+	checkRepo := exec.Command("git", "-C", state.RepoPath, "rev-parse", "--is-inside-work-tree")
+	if err := checkRepo.Run(); err != nil {
+		return "", errors.New("invalid Git repository path")
+	}
+
+	// 2️⃣ Check for uncommitted changes before revert
+	checkChanges := exec.Command("git", "-C", state.RepoPath, "status", "--porcelain")
+	out, _ := checkChanges.Output()
+	if strings.TrimSpace(string(out)) != "" {
+		return "", errors.New("uncommitted changes present — please commit or stash before reverting")
+	}
+
+	// 3️⃣ Run the revert command
+	cmd := exec.Command("git", "-C", state.RepoPath, "revert", "--no-edit", commitHash)
+	output, err := cmd.CombinedOutput()
+
+	return string(output), err
 }

@@ -202,7 +202,7 @@ func RevertButton(w fyne.Window, repoPath string) *widget.Button {
 				return
 			}
 
-			out, err := git.Revert(repoPath, sha)
+			out, err := git.Revert(sha)
 			if err != nil {
 				dialog.ShowError(err, w)
 				return
