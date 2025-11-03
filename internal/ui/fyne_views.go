@@ -143,17 +143,16 @@ func PushButton(w fyne.Window) fyne.CanvasObject {
 			dialog.ShowError(errors.New("No repository selected"), w)
 			return
 		}
+
+		branch := getBranch()
+		if branch == "" {
+			dialog.ShowError(errors.New("No branch selected"), w)
+			return
+		}
 		progress := dialog.NewProgressInfinite("Running Commands", "Please wait while commands are executing...", w)
 
 		go func() {
 			progress.Show()
-
-			branch := getBranch()
-			if branch == "" {
-				dialog.ShowError(errors.New("No branch selected"), w)
-				return
-			}
-
 			output, err := git.Push(state.RepoPath, branch)
 			if err != nil {
 				dialog.ShowError(fmt.Errorf("Push failed:\n%v\n\n%s", err, output), w)
@@ -161,8 +160,8 @@ func PushButton(w fyne.Window) fyne.CanvasObject {
 			}
 			progress.Hide()
 			dialog.ShowInformation("Push Success", "Repository pushed successfully.", w)
-		}()
 
+		}()
 	})
 
 	return container.NewVBox(
