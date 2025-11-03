@@ -156,8 +156,6 @@ func PushButton(w fyne.Window) fyne.CanvasObject {
 
 		go func() {
 			output, err := git.Push(state.RepoPath, branch)
-
-			// Ensure progress is hidden regardless of outcome
 			defer progress.Hide()
 
 			if err != nil {
@@ -165,7 +163,8 @@ func PushButton(w fyne.Window) fyne.CanvasObject {
 				return
 			}
 
-			dialog.ShowInformation("Push Success", "Repository pushed successfully.", w)
+			successMsg := fmt.Sprintf("Repository pushed successfully to branch '%s'.\n\nGit Output:\n%s", branch, output)
+			dialog.ShowInformation("Push Success", successMsg, w)
 		}()
 	})
 
