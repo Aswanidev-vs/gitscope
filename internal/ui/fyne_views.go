@@ -78,7 +78,11 @@ func dashBoardPage(w fyne.Window) fyne.CanvasObject {
 	revertBtn.Resize(fyne.NewSize(100, 40))
 	revertBtn.Move(fyne.NewPos(110, 350))
 
-	return container.NewWithoutLayout(initBtn, stageBtn, commitBtn, statusBtn, pushBtn, logBtn, revertBtn, output)
+	cloneBtn := CloneButton(w, state.RepoPath)
+	cloneBtn.Resize(fyne.NewSize(100, 40))
+	cloneBtn.Move(fyne.NewPos(220, 350))
+
+	return container.NewWithoutLayout(initBtn, stageBtn, commitBtn, statusBtn, pushBtn, logBtn, revertBtn, cloneBtn, output)
 }
 func InitButton(output *widget.Entry) *widget.Button {
 	return widget.NewButton("Init", func() {
@@ -209,6 +213,37 @@ func RevertButton(w fyne.Window, repoPath string) *widget.Button {
 			}
 
 			dialog.ShowInformation("Revert Successful", out, w)
+		}, w)
+	})
+}
+func CloneButton(w fyne.Window, repoPath string) *widget.Button {
+	return widget.NewButton("Clone", func() {
+		input := widget.NewEntry()
+		input.SetPlaceHolder("https://github.com/yourname/repositoryname.git")
+		input.Resize(fyne.NewSize(350, 40))
+
+		form := []*widget.FormItem{
+			{Widget: input},
+		}
+
+		dialog.ShowForm("Clone URL", "Clone", "Cancel", form, func(valid bool) {
+			if !valid {
+				return
+			}
+
+			cloneurl := strings.TrimSpace(input.Text)
+			if cloneurl == "" {
+				dialog.ShowInformation("not clone url", "input cannot be empty.", w)
+				return
+			}
+
+			out, err := git.Clone(state.RepoPath, cloneurl)
+			if err != nil {
+				dialog.ShowError(err, w)
+				return
+			}
+
+			dialog.ShowInformation("Clone Successful", out, w)
 		}, w)
 	})
 }
