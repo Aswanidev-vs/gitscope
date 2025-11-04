@@ -141,8 +141,7 @@ func CreateBranch(repoPath, branchname string) (string, error) {
 	if err != nil {
 		return string(out), fmt.Errorf("Creating New Branch failed:%v\n%s", err, string(out))
 	}
-	// return "successfully Created New Branch", nil
-	return "", nil
+	return "successfully Created New Branch", nil
 
 }
 func DeleteBranch(repoPath, branchname string) (string, error) {
@@ -151,7 +150,5 @@ func DeleteBranch(repoPath, branchname string) (string, error) {
 	if err != nil {
 		return string(out), fmt.Errorf("Creating New Branch failed:%v\n%s", err, string(out))
 	}
-	// return "successfully Deleted New Branch", nil
-	return "", nil
-
+	return "successfully Deleted New Branch", nil
 }

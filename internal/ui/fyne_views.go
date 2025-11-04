@@ -148,8 +148,7 @@ func CommitButton(w fyne.Window) *widget.Button {
 }
 func PushButton(w fyne.Window) fyne.CanvasObject {
 
-	branchSelectorUI, getBranch, refreshBranches := helpers.BranchSelector(state.RepoPath)
-
+	branchSelectorUI, getBranch := helpers.BranchSelector(state.RepoPath)
 	pushBtn := widget.NewButton("Push", func() {
 		if state.RepoPath == "" {
 			dialog.ShowError(errors.New("No repository selected"), w)
@@ -172,7 +171,7 @@ func PushButton(w fyne.Window) fyne.CanvasObject {
 			}
 			progress.Hide()
 			dialog.ShowInformation("Push Success", "Repository pushed successfully.", w)
-			refreshBranches()
+
 		}()
 	})
 
@@ -272,20 +271,22 @@ func BranchButton(w fyne.Window) *widget.Button {
 		dlg := utils.NewBranchButton(
 			w,
 			func(name string) {
-				out, err := git.CreateBranch(state.RepoPath, name)
+				_, err := git.CreateBranch(state.RepoPath, name)
 				if err != nil {
 					dialog.ShowError(err, w)
-				} else {
-					dialog.ShowInformation("Branch Created", out, w)
 				}
+				// else {
+				// 	dialog.ShowInformation("Branch Created", out, w)
+				// }
 			},
 			func(name string) {
-				out, err := git.DeleteBranch(state.RepoPath, name)
+				_, err := git.DeleteBranch(state.RepoPath, name)
 				if err != nil {
 					dialog.ShowError(err, w)
-				} else {
-					dialog.ShowInformation("Branch Deleted", out, w)
 				}
+				// else {
+				// 	dialog.ShowInformation("Branch Deleted", out, w)
+				// }
 			},
 		)
 
