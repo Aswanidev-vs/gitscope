@@ -145,32 +145,33 @@ func ListPush(repoPath string) ([]string, error) {
 	return branches, nil
 }
 
-func BranchSelector(repoPath string) (fyne.CanvasObject, func() string) {
+func BranchSelector(repoPath string) (fyne.CanvasObject, func() string, func()) {
 	selectEntry := widget.NewSelectEntry([]string{"Loading..."})
 	selectEntry.SetPlaceHolder("Select a branch")
 
-	go func() {
-		branches, err := ListPush(repoPath)
-		if err != nil {
-			selectEntry.SetText("Error loading branches")
-			fmt.Println("Branch load error:", err)
-			return
-		}
+	refresh := func() {
+		go func() {
+			branches, err := ListPush(repoPath)
+			if err != nil {
+				selectEntry.SetText("Error loading branches")
+				fmt.Println("Branch load error:", err)
+				return
+			}
 
-		selectEntry.SetOptions(branches)
-		if len(branches) > 0 {
-			selectEntry.SetText(branches[0])
-		}
-	}()
+			selectEntry.SetOptions(branches)
+			if len(branches) > 0 {
+				selectEntry.SetText(branches[0])
+			}
+		}()
+	}
+
+	// initial load
+	refresh()
 
 	getSelectedBranch := func() string {
 		return strings.TrimSpace(selectEntry.Text)
 	}
 
-	ui := container.NewVBox(
-		// widget.NewLabel("Available Branches"),
-		selectEntry,
-	)
-
-	return ui, getSelectedBranch
+	ui := container.NewVBox(selectEntry)
+	return ui, getSelectedBranch, refresh
 }

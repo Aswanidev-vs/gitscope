@@ -135,3 +135,23 @@ func Clone(repoPath, CloneUrl string) (string, error) {
 
 	return "successfully cloned the Repo", nil
 }
+func CreateBranch(repoPath, branchname string) (string, error) {
+	cmd := exec.Command("git", "-C", repoPath, "branch", branchname)
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		return string(out), fmt.Errorf("Creating New Branch failed:%v\n%s", err, string(out))
+	}
+	// return "successfully Created New Branch", nil
+	return "", nil
+
+}
+func DeleteBranch(repoPath, branchname string) (string, error) {
+	cmd := exec.Command("git", "-C", repoPath, "branch", "-d", branchname)
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		return string(out), fmt.Errorf("Creating New Branch failed:%v\n%s", err, string(out))
+	}
+	// return "successfully Deleted New Branch", nil
+	return "", nil
+
+}

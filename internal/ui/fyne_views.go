@@ -3,6 +3,7 @@ package ui
 import (
 	"errors"
 	"fmt"
+	"os"
 	"strings"
 
 	"fyne.io/fyne/v2"
@@ -13,6 +14,7 @@ import (
 	"github.com/gitscope/internal/git"
 	"github.com/gitscope/internal/helpers"
 	"github.com/gitscope/internal/state"
+	"github.com/gitscope/utils"
 )
 
 func RepositoryPage(w fyne.Window) fyne.CanvasObject {
@@ -82,7 +84,11 @@ func dashBoardPage(w fyne.Window) fyne.CanvasObject {
 	cloneBtn.Resize(fyne.NewSize(100, 40))
 	cloneBtn.Move(fyne.NewPos(220, 350))
 
-	return container.NewWithoutLayout(initBtn, stageBtn, commitBtn, statusBtn, pushBtn, logBtn, revertBtn, cloneBtn, output)
+	Branchbtn := BranchButton(w)
+	Branchbtn.Resize(fyne.NewSize(100, 40))
+	Branchbtn.Move(fyne.NewPos(329, 350))
+
+	return container.NewWithoutLayout(initBtn, stageBtn, commitBtn, statusBtn, pushBtn, logBtn, revertBtn, cloneBtn, Branchbtn, output)
 }
 func InitButton(output *widget.Entry) *widget.Button {
 	return widget.NewButton("Init", func() {
@@ -142,7 +148,8 @@ func CommitButton(w fyne.Window) *widget.Button {
 }
 func PushButton(w fyne.Window) fyne.CanvasObject {
 
-	branchSelectorUI, getBranch := helpers.BranchSelector(state.RepoPath)
+	branchSelectorUI, getBranch, refreshBranches := helpers.BranchSelector(state.RepoPath)
+
 	pushBtn := widget.NewButton("Push", func() {
 		if state.RepoPath == "" {
 			dialog.ShowError(errors.New("No repository selected"), w)
@@ -165,7 +172,7 @@ func PushButton(w fyne.Window) fyne.CanvasObject {
 			}
 			progress.Hide()
 			dialog.ShowInformation("Push Success", "Repository pushed successfully.", w)
-
+			refreshBranches()
 		}()
 	})
 
@@ -246,4 +253,45 @@ func CloneButton(w fyne.Window, repoPath string) *widget.Button {
 			dialog.ShowInformation("Clone Successful", out, w)
 		}, w)
 	})
+}
+func BranchButton(w fyne.Window) *widget.Button {
+	btn := widget.NewButton("Branch", func() {
+		// Check if repoPath is set
+		if state.RepoPath == "" {
+			dialog.ShowInformation("No Repository Found", "Please open or create a repository first.", w)
+			return
+		}
+
+		// Check if repoPath folder exists
+		if _, err := os.Stat(state.RepoPath); os.IsNotExist(err) {
+			dialog.ShowInformation("Invalid Repository", "The selected repository path does not exist. Please create or open a valid one.", w)
+			return
+		}
+
+		// Create the branch button dialog
+		dlg := utils.NewBranchButton(
+			w,
+			func(name string) {
+				out, err := git.CreateBranch(state.RepoPath, name)
+				if err != nil {
+					dialog.ShowError(err, w)
+				} else {
+					dialog.ShowInformation("Branch Created", out, w)
+				}
+			},
+			func(name string) {
+				out, err := git.DeleteBranch(state.RepoPath, name)
+				if err != nil {
+					dialog.ShowError(err, w)
+				} else {
+					dialog.ShowInformation("Branch Deleted", out, w)
+				}
+			},
+		)
+
+		// Simulate clicking to open the dialog
+		dlg.Tapped(nil)
+	})
+
+	return btn
 }
