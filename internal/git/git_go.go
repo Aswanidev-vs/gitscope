@@ -129,6 +129,7 @@ func Revert(commitHash string) (string, error) {
 func Clone(repoPath, CloneUrl string) (string, error) {
 	cmd := exec.Command("git", "-C", repoPath, "clone", CloneUrl)
 	out, err := cmd.CombinedOutput()
+
 	if err != nil {
 		return string(out), fmt.Errorf("clone failed:%v\n%s", err, string(out))
 	}

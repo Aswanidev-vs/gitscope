@@ -165,12 +165,12 @@ func PushButton(w fyne.Window) fyne.CanvasObject {
 		go func() {
 			progress.Show()
 			output, err := git.Push(state.RepoPath, branch)
+			progress.Hide()
+			dialog.ShowInformation("Push Success", "Repository pushed successfully.", w)
 			if err != nil {
 				dialog.ShowError(fmt.Errorf("Push failed:\n%v\n\n%s", err, output), w)
 				return
 			}
-			progress.Hide()
-			dialog.ShowInformation("Push Success", "Repository pushed successfully.", w)
 
 		}()
 	})
@@ -193,6 +193,10 @@ func LogButton(output *widget.Entry) *widget.Button {
 }
 func RevertButton(w fyne.Window, repoPath string) *widget.Button {
 	return widget.NewButton("Revert", func() {
+		if repoPath == "" {
+			dialog.ShowInformation("", "No Repository Found ,Open up or create the repository ", w)
+			return
+		}
 		input := widget.NewEntry()
 		input.SetPlaceHolder("e.g. a1s4fd6")
 		input.Resize(fyne.NewSize(350, 40))
@@ -224,6 +228,10 @@ func RevertButton(w fyne.Window, repoPath string) *widget.Button {
 }
 func CloneButton(w fyne.Window, repoPath string) *widget.Button {
 	return widget.NewButton("Clone", func() {
+		if repoPath == "" {
+			dialog.ShowInformation("", "No Repository path or Location is selected for cloning", w)
+			return
+		}
 		input := widget.NewEntry()
 		input.SetPlaceHolder("https://github.com/yourname/repositoryname.git")
 		input.Resize(fyne.NewSize(350, 40))
