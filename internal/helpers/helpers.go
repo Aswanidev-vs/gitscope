@@ -14,7 +14,6 @@ import (
 	"fyne.io/fyne/v2/widget"
 
 	"github.com/gitscope/internal/git"
-
 	"github.com/gitscope/internal/state"
 )
 

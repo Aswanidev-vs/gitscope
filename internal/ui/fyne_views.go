@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"os/exec"
 	"strings"
 
 	"fyne.io/fyne/v2"
@@ -88,7 +89,7 @@ func dashBoardPage(w fyne.Window) fyne.CanvasObject {
 	Branchbtn.Resize(fyne.NewSize(100, 40))
 	Branchbtn.Move(fyne.NewPos(329, 350))
 
-	PullBtn := PullButton(output)
+	PullBtn := PullButton(w)
 	PullBtn.Resize(fyne.NewSize(100, 40))
 	PullBtn.Move(fyne.NewPos(439, 350))
 
@@ -327,13 +328,55 @@ func BranchButton(w fyne.Window) *widget.Button {
 	return btn
 }
 
-func PullButton(output *widget.Entry) *widget.Button {
-	return widget.NewButton("Pull", func() {
-		out, err := git.Pull(state.RepoPath)
-		if err != nil {
-			output.SetText("error: " + err.Error())
-		} else {
-			output.SetText(out)
+func PullButton(w fyne.Window) fyne.CanvasObject {
+	branchSelectorUI, getBranch := helpers.BranchSelector(state.RepoPath)
+
+	pullBtn := widget.NewButton("Pull", func() {
+		if state.RepoPath == "" {
+			dialog.ShowError(errors.New("No repository selected"), w)
+			return
 		}
+		branch := getBranch()
+		if branch == "" {
+			dialog.ShowError(errors.New("No branch selected"), w)
+			return
+		}
+
+		// Ask developer if they also want to reset before pulling
+		dialog.ShowConfirm("Pull Options", "Do you want to reset the last commit before pulling?", func(reset bool) {
+			progress := dialog.NewProgressInfinite("Running Commands", "Please wait while commands are executing...", w)
+			go func() {
+				progress.Show()
+				defer progress.Hide()
+
+				if reset {
+					// Perform optional reset
+					resetCmd := exec.Command("git", "-C", state.RepoPath, "reset", "--soft", "HEAD~1")
+					out, err := resetCmd.CombinedOutput()
+					if err != nil {
+						dialog.ShowError(fmt.Errorf("Reset failed:\n%v\n\n%s", err, string(out)), w)
+						return
+					}
+				}
+
+				// Always perform pull
+				output, err := git.Pull(state.RepoPath, branch)
+				if err != nil {
+					dialog.ShowError(fmt.Errorf("Pull failed:\n%v\n\n%s", err, output), w)
+					return
+				}
+
+				msg := "Pull completed successfully."
+				if reset {
+					msg = "Last commit reset and pull completed successfully."
+				}
+				dialog.ShowInformation("Success", msg, w)
+			}()
+		}, w)
 	})
+
+	return container.NewVBox(
+		pullBtn,
+		branchSelectorUI,
+	)
 }
