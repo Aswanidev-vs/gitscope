@@ -52,6 +52,11 @@ func dashBoardPage(w fyne.Window) fyne.CanvasObject {
 
 	output.Resize(fyne.NewSize(500, 230))
 	output.Move(fyne.NewPos(0, 1))
+	clearBtn := widget.NewButton("Clear", func() {
+		output.SetText("") // Clears the content
+	})
+	clearBtn.Resize(fyne.NewSize(100, 40))
+	clearBtn.Move(fyne.NewPos(510, 1))
 
 	initBtn := InitButton(output)
 	initBtn.Resize(fyne.NewSize(100, 40))
@@ -93,7 +98,7 @@ func dashBoardPage(w fyne.Window) fyne.CanvasObject {
 	PullBtn.Resize(fyne.NewSize(100, 40))
 	PullBtn.Move(fyne.NewPos(439, 350))
 
-	return container.NewWithoutLayout(initBtn, stageBtn, commitBtn, statusBtn, pushBtn, logBtn, revertBtn, cloneBtn, Branchbtn, PullBtn, output)
+	return container.NewWithoutLayout(initBtn, stageBtn, commitBtn, statusBtn, pushBtn, logBtn, revertBtn, cloneBtn, Branchbtn, PullBtn, clearBtn, output)
 }
 func InitButton(output *widget.Entry) *widget.Button {
 	return widget.NewButton("Init", func() {
@@ -351,12 +356,19 @@ func PullButton(w fyne.Window) fyne.CanvasObject {
 
 				if reset {
 					// Perform optional reset
-					resetCmd := exec.Command("git", "-C", state.RepoPath, "reset", "--soft", "HEAD~1")
+					sha, err := GetPreviousCommit(state.RepoPath)
+					if err != nil {
+						dialog.ShowError(err, w)
+						return
+					}
+
+					resetCmd := exec.Command("git", "-C", state.RepoPath, "reset", "--soft", sha)
 					out, err := resetCmd.CombinedOutput()
 					if err != nil {
 						dialog.ShowError(fmt.Errorf("Reset failed:\n%v\n\n%s", err, string(out)), w)
 						return
 					}
+
 				}
 
 				// Always perform pull
@@ -379,4 +391,12 @@ func PullButton(w fyne.Window) fyne.CanvasObject {
 		pullBtn,
 		branchSelectorUI,
 	)
+}
+func GetPreviousCommit(repoPath string) (string, error) {
+	cmd := exec.Command("git", "-C", repoPath, "rev-parse", "HEAD~1")
+	out, err := cmd.Output()
+	if err != nil {
+		return "", fmt.Errorf("No previous commit to reset: %v", err)
+	}
+	return strings.TrimSpace(string(out)), nil
 }

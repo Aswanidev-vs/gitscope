@@ -40,7 +40,6 @@ func App() {
 	}
 
 	sidebar, content := SideBar(myWindow)
-
 	mainLayout := container.NewBorder(nil, nil, sidebar, nil, content)
 	myWindow.SetContent(fynetooltip.AddWindowToolTipLayer(mainLayout, myWindow.Canvas()))
 	myWindow.Resize(fyne.NewSize(900, 600))
