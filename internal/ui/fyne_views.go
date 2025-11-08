@@ -76,11 +76,11 @@ func dashBoardPage(w fyne.Window) fyne.CanvasObject {
 	logBtn.Resize(fyne.NewSize(100, 40))
 	logBtn.Move(fyne.NewPos(1, 350))
 
-	revertBtn := RevertButton(w, state.RepoPath)
+	revertBtn := RevertButton(w)
 	revertBtn.Resize(fyne.NewSize(100, 40))
 	revertBtn.Move(fyne.NewPos(110, 350))
 
-	cloneBtn := CloneButton(w, state.RepoPath)
+	cloneBtn := CloneButton(w)
 	cloneBtn.Resize(fyne.NewSize(100, 40))
 	cloneBtn.Move(fyne.NewPos(220, 350))
 
@@ -88,7 +88,11 @@ func dashBoardPage(w fyne.Window) fyne.CanvasObject {
 	Branchbtn.Resize(fyne.NewSize(100, 40))
 	Branchbtn.Move(fyne.NewPos(329, 350))
 
-	return container.NewWithoutLayout(initBtn, stageBtn, commitBtn, statusBtn, pushBtn, logBtn, revertBtn, cloneBtn, Branchbtn, output)
+	PullBtn := PullButton(output)
+	PullBtn.Resize(fyne.NewSize(100, 40))
+	PullBtn.Move(fyne.NewPos(439, 350))
+
+	return container.NewWithoutLayout(initBtn, stageBtn, commitBtn, statusBtn, pushBtn, logBtn, revertBtn, cloneBtn, Branchbtn, PullBtn, output)
 }
 func InitButton(output *widget.Entry) *widget.Button {
 	return widget.NewButton("Init", func() {
@@ -191,10 +195,10 @@ func LogButton(output *widget.Entry) *widget.Button {
 		}
 	})
 }
-func RevertButton(w fyne.Window, repoPath string) *widget.Button {
+func RevertButton(w fyne.Window) *widget.Button {
 	return widget.NewButton("Revert", func() {
-		if repoPath == "" {
-			dialog.ShowInformation("", "No Repository Found ,Open up or create the repository ", w)
+		if state.RepoPath == "" {
+			dialog.ShowInformation("Missing Clone Destination", "Please select or create an empty folder before cloning the repository.", w)
 			return
 		}
 		input := widget.NewEntry()
@@ -226,12 +230,26 @@ func RevertButton(w fyne.Window, repoPath string) *widget.Button {
 		}, w)
 	})
 }
-func CloneButton(w fyne.Window, repoPath string) *widget.Button {
+func CloneButton(w fyne.Window) *widget.Button {
 	return widget.NewButton("Clone", func() {
-		if repoPath == "" {
-			dialog.ShowInformation("", "No Repository path or Location is selected for cloning", w)
+		// Sync local repoPath with global state
+		if state.RepoPath == "" {
+			dialog.ShowInformation("Missing Clone Destination", "Please select or create an empty folder before cloning the repository.", w)
 			return
 		}
+
+		// Optional: validate that folder is truly empty
+		files, err := os.ReadDir(state.RepoPath)
+		if err != nil {
+			dialog.ShowError(fmt.Errorf("Unable to read target folder: %w", err), w)
+			return
+		}
+		if len(files) > 0 {
+			dialog.ShowInformation("Folder Not Empty", "Please choose an empty folder to clone into.", w)
+			return
+		}
+
+		// Clone URL input
 		input := widget.NewEntry()
 		input.SetPlaceHolder("https://github.com/yourname/repositoryname.git")
 		input.Resize(fyne.NewSize(350, 40))
@@ -240,24 +258,28 @@ func CloneButton(w fyne.Window, repoPath string) *widget.Button {
 			{Widget: input},
 		}
 
-		dialog.ShowForm("Clone URL", "Clone", "Cancel", form, func(valid bool) {
+		dialog.ShowForm("Clone Repository", "Clone", "Cancel", form, func(valid bool) {
 			if !valid {
 				return
 			}
 
 			cloneurl := strings.TrimSpace(input.Text)
 			if cloneurl == "" {
-				dialog.ShowInformation("not clone url", "input cannot be empty.", w)
+				dialog.ShowInformation("Missing URL", "Repository URL cannot be empty.", w)
+				return
+			}
+			if !strings.HasPrefix(cloneurl, "https://github.com/") {
+				dialog.ShowInformation("Invalid URL", "Please enter a valid GitHub repository URL.", w)
 				return
 			}
 
-			out, err := git.Clone(state.RepoPath, cloneurl)
-			if err != nil {
-				dialog.ShowError(err, w)
-				return
-			}
+			// out, err := git.Clone(state.RepoPath, cloneurl)
+			// if err != nil {
+			// 	dialog.ShowError(fmt.Errorf("Clone failed: %w", err), w)
+			// 	return
+			// }
 
-			dialog.ShowInformation("Clone Successful", out, w)
+			// dialog.ShowInformation("Clone Successful", out, w)
 		}, w)
 	})
 }
@@ -303,4 +325,15 @@ func BranchButton(w fyne.Window) *widget.Button {
 	})
 
 	return btn
+}
+
+func PullButton(output *widget.Entry) *widget.Button {
+	return widget.NewButton("Pull", func() {
+		out, err := git.Pull(state.RepoPath)
+		if err != nil {
+			output.SetText("error: " + err.Error())
+		} else {
+			output.SetText(out)
+		}
+	})
 }

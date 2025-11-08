@@ -153,3 +153,11 @@ func DeleteBranch(repoPath, branchname string) (string, error) {
 	}
 	return "successfully Deleted New Branch", nil
 }
+func Pull(repoPath string) (string, error) {
+	cmd := exec.Command("git", "-C", repoPath, "pull")
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		return string(out), fmt.Errorf("An issue faced while pulling:%v\n%s", err, string(out))
+	}
+	return "successfully Pulled ", nil
+}
