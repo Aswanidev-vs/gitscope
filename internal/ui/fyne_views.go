@@ -402,34 +402,7 @@ func PullButton(w fyne.Window) fyne.CanvasObject {
 	)
 }
 
-// func SettingPage(w fyne.Window) fyne.CanvasObject {
-// 	about := `GitScope v1.0.0
-// A lightweight visual Git GUI client built using Go + Fyne.
-
-// Features:
-//  • Init, Commit, Clone, Pull, Push, Stage, etc.
-
-// Developed by Aswanidev
-// `
-
-// 	showAbout := func() {
-// 		dialog.ShowCustom(
-// 			"About GitScope",
-// 			"Close",
-// 			widget.NewLabel(about),
-// 			w,
-// 		)
-// 	}
-
-// 	aboutBtn := widget.NewButton("About GitScope", showAbout)
-
-//		return container.NewVBox(
-//			widget.NewLabel("Settings"),
-//			aboutBtn,
-//		)
-//	}
 func SettingPage(w fyne.Window) fyne.CanvasObject {
-	// Logo
 	logo := canvas.NewImageFromFile("assets/icons/gitscope_logo_v6.png")
 	logo.FillMode = canvas.ImageFillContain
 	logo.SetMinSize(fyne.NewSize(120, 120))
