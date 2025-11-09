@@ -356,7 +356,7 @@ func PullButton(w fyne.Window) fyne.CanvasObject {
 
 				if reset {
 					// Perform optional reset
-					sha, err := GetPreviousCommit(state.RepoPath)
+					sha, err := git.GetPreviousCommit(state.RepoPath)
 					if err != nil {
 						dialog.ShowError(err, w)
 						return
@@ -391,12 +391,4 @@ func PullButton(w fyne.Window) fyne.CanvasObject {
 		pullBtn,
 		branchSelectorUI,
 	)
-}
-func GetPreviousCommit(repoPath string) (string, error) {
-	cmd := exec.Command("git", "-C", repoPath, "rev-parse", "HEAD~1")
-	out, err := cmd.Output()
-	if err != nil {
-		return "", fmt.Errorf("No previous commit to reset: %v", err)
-	}
-	return strings.TrimSpace(string(out)), nil
 }
