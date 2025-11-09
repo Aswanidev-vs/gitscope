@@ -7,6 +7,8 @@ import (
 	"os/exec"
 	"runtime"
 	"strings"
+	"sync"
+	"time"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
@@ -16,8 +18,6 @@ import (
 	"github.com/gitscope/internal/git"
 	"github.com/gitscope/internal/state"
 )
-
-var loadingDialog dialog.Dialog
 
 func RullshellCommand(line string) *exec.Cmd {
 	if runtime.GOOS == "windows" {
@@ -144,32 +144,77 @@ func ListPush(repoPath string) ([]string, error) {
 	return branches, nil
 }
 
-func BranchSelector(repoPath string) (fyne.CanvasObject, func() string) {
+func BranchSelector(repoPath string, w fyne.Window) (fyne.CanvasObject, func() string) {
+	stop := make(chan struct{})
+
 	selectEntry := widget.NewSelectEntry([]string{"Loading..."})
 	selectEntry.SetPlaceHolder("Select a branch")
 
-	go func() {
+	var lastBranches []string
+	var mu sync.Mutex
+
+	updateList := func() {
 		branches, err := ListPush(repoPath)
 		if err != nil {
-			selectEntry.SetText("Error loading branches")
+			fyne.Do(func() {
+				selectEntry.SetText("Error loading branches")
+			})
 			fmt.Println("Branch load error:", err)
 			return
 		}
 
-		selectEntry.SetOptions(branches)
-		if len(branches) > 0 {
-			selectEntry.SetText(branches[0])
+		mu.Lock()
+		defer mu.Unlock()
+
+		if !slicesEqual(branches, lastBranches) {
+			lastBranches = branches
+			fyne.Do(func() {
+				selectEntry.SetOptions(branches)
+				if len(branches) > 0 {
+					selectEntry.SetText(branches[0])
+				} else {
+					selectEntry.SetText("")
+				}
+			})
+		}
+	}
+
+	updateList()
+
+	go func() {
+		for {
+			select {
+			case <-stop:
+				fmt.Println("Branch watcher stopped for", repoPath)
+				return
+			case <-time.After(3 * time.Second):
+				updateList()
+			}
 		}
 	}()
+
+	// stop watcher automatically when window closes
+	w.SetOnClosed(func() {
+		close(stop)
+	})
 
 	getSelectedBranch := func() string {
 		return strings.TrimSpace(selectEntry.Text)
 	}
 
-	ui := container.NewVBox(
-		// widget.NewLabel("Available Branches"),
-		selectEntry,
-	)
-
+	ui := container.NewVBox(selectEntry)
 	return ui, getSelectedBranch
+}
+
+// Helper: compares two slices (order-sensitive)
+func slicesEqual(a, b []string) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i := range a {
+		if a[i] != b[i] {
+			return false
+		}
+	}
+	return true
 }

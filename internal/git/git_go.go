@@ -79,7 +79,7 @@ func Stage() (string, error) {
 }
 
 func Push(repoPath, branch string) (string, error) {
-	cmd := exec.Command("git", "-C", repoPath, "push", "origin", branch)
+	cmd := exec.Command("git", "-C", state.RepoPath, "push", "origin", branch)
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		return string(out), fmt.Errorf("push failed: %v\n%s", err, string(out))
