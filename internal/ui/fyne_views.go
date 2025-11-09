@@ -3,11 +3,13 @@ package ui
 import (
 	"errors"
 	"fmt"
+	"net/url"
 	"os"
 	"os/exec"
 	"strings"
 
 	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/widget"
@@ -36,14 +38,21 @@ func RepositoryPage(w fyne.Window) fyne.CanvasObject {
 	NewRepo := core.CreateNewRepo(w, func(s string) {
 		dialog.ShowInformation("Repo command ", s, w)
 	})
-	NewRepo.Resize(fyne.NewSize(400, 500))
-	NewRepo.Move(fyne.NewPos(1, 500))
+	// NewRepo.Resize(fyne.NewSize(400, 500))
+	// NewRepo.Move(fyne.NewPos(1, 500))
 
+	ExistRepo := core.ExistingRepo(w, func(cmdText string) {
+		helpers.ExistingRepoCmd(w, state.RepoPath, cmdText)
+	})
+
+	// ExistRepo.Resize(fyne.NewSize(250, 300))
+	// ExistRepo.Move(fyne.NewPos(1, 600))
 	return container.NewVBox(
 		widget.NewLabel("Repository Setup"),
 		browseBtn,
 		output,
 		NewRepo,
+		ExistRepo,
 	)
 }
 
@@ -391,4 +400,64 @@ func PullButton(w fyne.Window) fyne.CanvasObject {
 		pullBtn,
 		branchSelectorUI,
 	)
+}
+
+// func SettingPage(w fyne.Window) fyne.CanvasObject {
+// 	about := `GitScope v1.0.0
+// A lightweight visual Git GUI client built using Go + Fyne.
+
+// Features:
+//  • Init, Commit, Clone, Pull, Push, Stage, etc.
+
+// Developed by Aswanidev
+// `
+
+// 	showAbout := func() {
+// 		dialog.ShowCustom(
+// 			"About GitScope",
+// 			"Close",
+// 			widget.NewLabel(about),
+// 			w,
+// 		)
+// 	}
+
+// 	aboutBtn := widget.NewButton("About GitScope", showAbout)
+
+//		return container.NewVBox(
+//			widget.NewLabel("Settings"),
+//			aboutBtn,
+//		)
+//	}
+func SettingPage(w fyne.Window) fyne.CanvasObject {
+	// Logo
+	logo := canvas.NewImageFromFile("assets/icons/gitscope_logo_v6.png")
+	logo.FillMode = canvas.ImageFillContain
+	logo.SetMinSize(fyne.NewSize(120, 120))
+
+	// About text (professional tone and cleaner formatting)
+	f1 := widget.NewLabel("GitScope is a modern, lightweight, and visually intuitive Git client built with Go and Fyne. It simplifies essential")
+	f2 := widget.NewLabel("version control operations making Git easier to use for both beginners and experienced developers.")
+	f3 := widget.NewLabel("Version: 1.0.0")
+	f4 := widget.NewLabel("Developer: Aswanidev VS")
+
+	// GitHub link
+	link := widget.NewHyperlink("🔗 View Project on GitHub", &url.URL{
+		Scheme: "https",
+		Host:   "github.com",
+		Path:   "Aswanidev-vs/GitScope",
+	})
+
+	// Foreground layout (content)
+	content := container.NewVBox(
+		widget.NewLabelWithStyle("About GitScope", fyne.TextAlignCenter, fyne.TextStyle{Bold: true}),
+		logo,
+		f1,
+		f2,
+		f3,
+		f4,
+		link,
+	)
+	centeredContent := container.NewCenter(content)
+
+	return container.NewStack(centeredContent)
 }

@@ -13,6 +13,7 @@ import (
 	"fyne.io/fyne/v2/widget"
 	fynetooltip "github.com/dweymouth/fyne-tooltip"
 	ttwidget "github.com/dweymouth/fyne-tooltip/widget"
+	// "github.com/gitscope/internal/ui"
 )
 
 type CustomTheme struct {
@@ -47,7 +48,6 @@ func App() {
 }
 
 func SideBar(w fyne.Window) (fyne.CanvasObject, fyne.CanvasObject) {
-	settingsPage := widget.NewLabel("application settings")
 
 	var sidebar fyne.CanvasObject
 	var Addbtn, Repobtn, settingsbtn *ttwidget.Button
@@ -75,7 +75,9 @@ func SideBar(w fyne.Window) (fyne.CanvasObject, fyne.CanvasObject) {
 	})
 	Addbtn.SetToolTip("Git common operations")
 
-	// Settings button
+	// settingsPage := widget.NewLabel("application settings")
+	settingsPage := SettingPage(w)
+
 	settingsbtn = ttwidget.NewButtonWithIcon("", theme.SettingsIcon(), func() {
 		SetActive(settingsbtn, []*ttwidget.Button{Addbtn, Repobtn})
 		w.SetContent(fynetooltip.AddWindowToolTipLayer(

@@ -218,3 +218,52 @@ func slicesEqual(a, b []string) bool {
 	}
 	return true
 }
+
+func ExistingRepoCmd(w fyne.Window, repoPath string, cmdText string) {
+	if state.RepoPath == "" {
+		dialog.ShowError(errors.New("No repository path selected"), w)
+		return
+	}
+
+	progress := dialog.NewProgressInfinite("Executing Commands", "Please wait while running git commands...", w)
+	progress.Show()
+
+	go func() {
+		defer progress.Hide()
+
+		lines := strings.Split(cmdText, "\n")
+		var allErrors []string
+
+		for _, line := range lines {
+			line = strings.TrimSpace(line)
+			if line == "" {
+				continue
+			}
+
+			parts := strings.Fields(line)
+			if len(parts) == 0 {
+				continue
+			}
+
+			cmd := exec.Command(parts[0], parts[1:]...)
+			cmd.Dir = repoPath
+			out, err := cmd.CombinedOutput()
+			fmt.Println("Running:", line)
+			fmt.Println("Output:", string(out))
+
+			if err != nil {
+				allErrors = append(allErrors, fmt.Sprintf("❌ %s\n%s", line, string(out)))
+			}
+		}
+
+		if len(allErrors) > 0 {
+			fyne.CurrentApp().SendNotification(&fyne.Notification{
+				Title:   "Git Command Errors",
+				Content: strings.Join(allErrors, "\n"),
+			})
+			dialog.ShowError(errors.New(strings.Join(allErrors, "\n")), w)
+		} else {
+			dialog.ShowInformation("Success", "All commands executed successfully!", w)
+		}
+	}()
+}
