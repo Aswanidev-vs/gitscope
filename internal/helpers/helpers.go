@@ -8,6 +8,7 @@ import (
 	"runtime"
 	"strings"
 	"sync"
+	"syscall"
 	"time"
 
 	"fyne.io/fyne/v2"
@@ -120,7 +121,13 @@ func NewRepoCmd(w fyne.Window, repoPath string, cmdText string) fyne.CanvasObjec
 	return nil
 }
 func ListPush(repoPath string) ([]string, error) {
-	cmd := exec.Command("git", "branch", "--list")
+	if repoPath == "" {
+		return nil, errors.New("repository path cannot be empty")
+	}
+
+	cmd := exec.Command("git", "-C", repoPath, "branch", "--list")
+	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
+
 	cmd.Dir = repoPath
 
 	output, err := cmd.Output()
@@ -145,6 +152,7 @@ func ListPush(repoPath string) ([]string, error) {
 }
 
 func BranchSelector(repoPath string, w fyne.Window) (fyne.CanvasObject, func() string) {
+
 	stop := make(chan struct{})
 
 	selectEntry := widget.NewSelectEntry([]string{"Loading..."})
@@ -154,11 +162,12 @@ func BranchSelector(repoPath string, w fyne.Window) (fyne.CanvasObject, func() s
 	var mu sync.Mutex
 
 	updateList := func() {
-		branches, err := ListPush(repoPath)
+
+		branches, err := ListPush(state.RepoPath)
 		if err != nil {
-			fyne.Do(func() {
-				selectEntry.SetText("Error loading branches")
-			})
+			// fyne.Do(func() {
+			// 	selectEntry.SetText("Error loading branches")
+			// })
 			fmt.Println("Branch load error:", err)
 			return
 		}

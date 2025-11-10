@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/exec"
 	"strings"
+	"syscall"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
@@ -143,7 +144,14 @@ func StageButton(output *widget.Entry) *widget.Button {
 }
 
 func CommitButton(w fyne.Window) *widget.Button {
+
 	return widget.NewButton("Commit", func() {
+		repo := state.RepoPath
+		checkdir, err := os.Stat(repo)
+		if err != nil || !checkdir.IsDir() {
+			dialog.ShowInformation("invalid repository path", "Please select a valid repository path before commit.", w)
+			return
+		}
 		input := widget.NewEntry()
 		form := []*widget.FormItem{
 			{Text: "Message", Widget: input},
@@ -168,6 +176,8 @@ func CommitButton(w fyne.Window) *widget.Button {
 func PushButton(w fyne.Window) fyne.CanvasObject {
 
 	branchSelectorUI, getBranch := helpers.BranchSelector(state.RepoPath, w)
+	var issues []string
+
 	pushBtn := widget.NewButton("Push", func() {
 		if state.RepoPath == "" {
 			dialog.ShowError(errors.New("No repository selected"), w)
@@ -177,6 +187,27 @@ func PushButton(w fyne.Window) fyne.CanvasObject {
 		if branch == "" {
 			dialog.ShowError(errors.New("No branch selected"), w)
 			return
+		}
+
+		if !git.IsInitialized(state.RepoPath) {
+			// dialog.ShowError(fmt.Errorf("Repo is not initalized"), w)
+			// return
+			issues = append(issues, "Repo is not initalized")
+		}
+		_, stagecheck := git.Stage()
+		if stagecheck != nil {
+			// dialog.ShowError(fmt.Errorf("Not staged"), w)
+			// return
+			issues = append(issues, "Not Staged")
+		}
+		commitcheck := exec.Command("git", "-C", state.RepoPath, "diff", "--cached", "--quiet")
+		commitcheck.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
+		check := commitcheck.Run()
+
+		if check != nil {
+			// dialog.ShowError(fmt.Errorf("Commit first before pushing"), w)
+			// return
+			issues = append(issues, "You have uncommitted changes. Commit first before pushing.")
 		}
 
 		progress := dialog.NewProgressInfinite("Running Commands", "Please wait while commands are executing...", w)
@@ -211,6 +242,7 @@ func LogButton(output *widget.Entry) *widget.Button {
 	})
 }
 func RevertButton(w fyne.Window) *widget.Button {
+
 	return widget.NewButton("Revert", func() {
 		if state.RepoPath == "" {
 			dialog.ShowInformation("Missing Clone Destination", "Please select or create an empty folder before cloning the repository.", w)
