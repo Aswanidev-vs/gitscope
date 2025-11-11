@@ -266,7 +266,7 @@ func PushButton(w fyne.Window) fyne.CanvasObject {
 		commitCheck.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
 		Commiterr := commitCheck.Run()
 
-		if Commiterr == nil {
+		if Commiterr != nil {
 			// --quiet returns exit code 0 → means nothing to commit
 			dialog.ShowInformation("Git Commit", "No commit found. You need to commit before pushing!", w)
 			return
