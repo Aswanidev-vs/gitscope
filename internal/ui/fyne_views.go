@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/exec"
 	"strings"
+	"syscall"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
@@ -174,14 +175,20 @@ func CommitButton(w fyne.Window) *widget.Button {
 }
 
 func PushButton(w fyne.Window) fyne.CanvasObject {
-
 	branchSelectorUI, getBranch := helpers.BranchSelector(state.RepoPath, w)
 	pushBtn := widget.NewButton("Push", func() {
-
 		if state.RepoPath == "" {
 			dialog.ShowError(errors.New("No repository selected"), w)
 			return
 		}
+
+		// ensure path exists and is a directory
+		info, err := os.Stat(state.RepoPath)
+		if err != nil || !info.IsDir() {
+			dialog.ShowError(errors.New("Invalid repository path"), w)
+			return
+		}
+
 		branch := getBranch()
 		if branch == "" {
 			dialog.ShowError(errors.New("No branch selected"), w)
@@ -189,35 +196,48 @@ func PushButton(w fyne.Window) fyne.CanvasObject {
 		}
 
 		if !git.IsInitialized(state.RepoPath) {
-			dialog.ShowError(errors.New("Repository is not initialized."), w)
+			dialog.ShowInformation("Git Initialization", "Current repository is not initialized!", w)
 			return
 		}
 
-		stage, _ := git.Stage()
-		if stage != "" {
-			dialog.ShowInformation("Staging Required", "Please stage your changes before pushing.", w)
+		// Check for any uncommitted changes (staged or unstaged)
+		statusCmd := exec.Command("git", "status", "--porcelain")
+		statusCmd.Dir = state.RepoPath
+		statusCmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
+		statusOut, err := statusCmd.CombinedOutput()
+		if err != nil {
+			dialog.ShowError(fmt.Errorf("failed to check git status: %w\n%s", err, string(statusOut)), w)
 			return
 		}
+		if len(statusOut) > 0 {
+			dialog.ShowInformation("stage", "Not staged. Please stage them before pushing.", w)
+			return
+		}
+
+		// Ensure at least one commit exists (check HEAD)
+		revCmd := exec.Command("git", "rev-parse", "--verify", "HEAD")
+		revCmd.Dir = state.RepoPath
+		revCmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
+		if err := revCmd.Run(); err != nil {
+			dialog.ShowInformation("No Commits", "No commits found. You need to commit changes before pushing.", w)
+			return
+		}
+
 		progress := dialog.NewProgressInfinite("Running Commands", "Please wait while commands are executing...", w)
 
 		go func() {
-
 			progress.Show()
 			output, err := git.Push(state.RepoPath, branch)
 			progress.Hide()
-			dialog.ShowInformation("Push Success", "Repository pushed successfully.", w)
+
 			if err != nil {
 				dialog.ShowError(fmt.Errorf("Push failed:\n%v\n\n%s", err, output), w)
 				return
 			}
-
+			dialog.ShowInformation("Push Success", "Repository pushed successfully.", w)
 		}()
 	})
-
-	return container.NewVBox(
-		pushBtn,
-		branchSelectorUI,
-	)
+	return container.NewVBox(pushBtn, branchSelectorUI)
 }
 
 func LogButton(output *widget.Entry) *widget.Button {
