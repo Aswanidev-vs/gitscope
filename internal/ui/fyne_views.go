@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"net/url"
@@ -257,7 +258,7 @@ func PushButton(w fyne.Window) fyne.CanvasObject {
 			dialog.ShowError(fmt.Errorf("Git error while checking staged changes: %v", err), w)
 			return
 		}
-		if len(output) == 0 {
+		if len(bytes.TrimSpace(output)) == 0 {
 			dialog.ShowInformation("Git Stage", "No stages changes found ,please stage your changes before pushing !", w)
 			return
 		}
