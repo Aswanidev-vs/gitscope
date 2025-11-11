@@ -232,10 +232,7 @@ func CommitButton(w fyne.Window) *widget.Button {
 //	}
 func PushButton(w fyne.Window) fyne.CanvasObject {
 	branchSelectorUI, getBranch := helpers.BranchSelector(state.RepoPath, w)
-
 	pushBtn := widget.NewButton("Push", func() {
-		var issues []string
-
 		if state.RepoPath == "" {
 			dialog.ShowError(errors.New("No repository selected"), w)
 			return
@@ -247,32 +244,31 @@ func PushButton(w fyne.Window) fyne.CanvasObject {
 			return
 		}
 
-		// 1️⃣ Check if repo initialized
 		if !git.IsInitialized(state.RepoPath) {
-			issues = append(issues, "Repository is not initialized.")
+			dialog.ShowInformation("Git Initialization", "Current repository is not initialized!", w)
+			return
 		}
 
-		// 2️⃣ Check for unstaged (working directory) changes
-		unstagedCheck := exec.Command("git", "-C", state.RepoPath, "diff", "--exit-code")
-		unstagedCheck.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
-		if err := unstagedCheck.Run(); err != nil {
-			issues = append(issues, "You have unstaged changes. Please stage them before committing.")
+		// Check if there are staged changes
+		stageCheck := exec.Command("git", "-C", state.RepoPath, "diff", "--cached", "--exit-code")
+		stageCheck.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
+		if err := stageCheck.Run(); err == nil {
+			// Exit code 0 means nothing is staged
+			dialog.ShowInformation("Git Stage", "No staged changes found. Please stage your changes before pushing.", w)
+			return
 		}
 
-		// 3️⃣ Check for staged but uncommitted changes
-		stagedCheck := exec.Command("git", "-C", state.RepoPath, "diff", "--cached", "--quiet")
-		stagedCheck.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
-		if err := stagedCheck.Run(); err != nil {
-			issues = append(issues, "You have staged changes that are not committed.")
-		}
-
-		// 4️⃣ Show all accumulated issues
-		if len(issues) > 0 {
-			dialog.ShowError(errors.New(strings.Join(issues, "\n")), w)
+		// Check if staged changes are committed
+		commitCheck := exec.Command("git", "-C", state.RepoPath, "diff", "--cached", "--quiet")
+		commitCheck.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
+		if err := commitCheck.Run(); err != nil {
+			// Exit code 1 means there are staged but uncommitted changes
+			dialog.ShowInformation("Git Commit", "Staged changes are not committed. Please commit before pushing.", w)
 			return
 		}
 
 		progress := dialog.NewProgressInfinite("Running Commands", "Please wait while commands are executing...", w)
+
 		go func() {
 			progress.Show()
 			output, err := git.Push(state.RepoPath, branch)
@@ -285,7 +281,6 @@ func PushButton(w fyne.Window) fyne.CanvasObject {
 			dialog.ShowInformation("Push Success", "Repository pushed successfully.", w)
 		}()
 	})
-
 	return container.NewVBox(pushBtn, branchSelectorUI)
 }
 
