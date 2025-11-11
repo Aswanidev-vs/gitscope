@@ -7,7 +7,6 @@ import (
 	"os"
 	"os/exec"
 	"strings"
-	"syscall"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
@@ -194,13 +193,9 @@ func PushButton(w fyne.Window) fyne.CanvasObject {
 			return
 		}
 
-		staged, err := IsStaged(state.RepoPath)
-		if err != nil {
-			dialog.ShowError(fmt.Errorf("Failed to check git status: %v", err), w)
-			return
-		}
-		if !staged {
-			dialog.ShowError(errors.New("No files are staged!\nPlease stage your changes first ."), w)
+		stage, _ := git.Stage()
+		if stage != "" {
+			dialog.ShowInformation("Staging Required", "Please stage your changes before pushing.", w)
 			return
 		}
 		progress := dialog.NewProgressInfinite("Running Commands", "Please wait while commands are executing...", w)
@@ -459,20 +454,4 @@ func SettingPage(w fyne.Window) fyne.CanvasObject {
 	centeredContent := container.NewCenter(content)
 
 	return container.NewStack(centeredContent)
-}
-func IsStaged(repoPath string) (bool, error) {
-	cmd := exec.Command("git", "-C", repoPath, "status", "--porcelain")
-	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
-	out, err := cmd.Output()
-	if err != nil {
-		return false, err
-	}
-
-	lines := strings.Split(strings.TrimSpace(string(out)), "\n")
-	for _, line := range lines {
-		if len(line) >= 2 && line[0] != ' ' { // first column not space = staged
-			return true, nil
-		}
-	}
-	return false, nil
 }
