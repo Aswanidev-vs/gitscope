@@ -248,25 +248,24 @@ func PushButton(w fyne.Window) fyne.CanvasObject {
 			dialog.ShowInformation("Git Initialization", "Current repository is not initialized!", w)
 			return
 		}
+		stageCheck := exec.Command("git", "-C", state.RepoPath, "diff", "--cached", "--name-only")
 
-		// Check if there are staged changes
-		stageCheck := exec.Command("git", "-C", state.RepoPath, "diff", "--cached", "--exit-code")
 		stageCheck.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
-		if err := stageCheck.Run(); err == nil {
-			// Exit code 0 means nothing is staged
-			dialog.ShowInformation("Git Stage", "No staged changes found. Please stage your changes before pushing.", w)
+		output, err := stageCheck.Output()
+		if err != nil {
+			// Exit code 0 means no staged changes
+			dialog.ShowError(fmt.Errorf("Git error while checking staged changes: %v", err), w)
 			return
 		}
-
-		// Check if staged changes are committed
-		commitCheck := exec.Command("git", "-C", state.RepoPath, "diff", "--cached", "--quiet")
-		commitCheck.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
-		if err := commitCheck.Run(); err != nil {
-			// Exit code 1 means there are staged but uncommitted changes
-			dialog.ShowInformation("Git Commit", "Staged changes are not committed. Please commit before pushing.", w)
+		if len(output) == 0 {
+			dialog.ShowInformation("Git Stage", "No stages changes found ,please stage your changes before pushing !", w)
 			return
 		}
-
+		commiterr := CommitButton(w)
+		if commiterr != nil {
+			dialog.ShowInformation("Git Commit", "No commit found . you need to commit before Pushing", w)
+			return
+		}
 		progress := dialog.NewProgressInfinite("Running Commands", "Please wait while commands are executing...", w)
 
 		go func() {
