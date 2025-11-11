@@ -262,9 +262,13 @@ func PushButton(w fyne.Window) fyne.CanvasObject {
 			dialog.ShowInformation("Git Stage", "No stages changes found ,please stage your changes before pushing !", w)
 			return
 		}
-		commiterr := CommitButton(w)
-		if commiterr != nil {
-			dialog.ShowInformation("Git Commit", "No commit found . you need to commit before Pushing", w)
+		commitCheck := exec.Command("git", "-C", state.RepoPath, "diff", "--cached", "--quiet")
+		commitCheck.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
+		Commiterr := commitCheck.Run()
+
+		if Commiterr == nil {
+			// --quiet returns exit code 0 → means nothing to commit
+			dialog.ShowInformation("Git Commit", "No commit found. You need to commit before pushing!", w)
 			return
 		}
 		progress := dialog.NewProgressInfinite("Running Commands", "Please wait while commands are executing...", w)
