@@ -81,7 +81,7 @@ Contributions are welcome. Please open an issue for discussion or submit a pull 
 
 License
 
-No license file is included in the repository. Add a LICENSE (for example MIT or Apache-2.0) to make the project terms explicit.
+
 
 Contact
 
