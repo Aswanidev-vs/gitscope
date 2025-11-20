@@ -530,7 +530,12 @@ Branch`, func() {
 			{Text: "Old Name", Widget: oldInput},
 			{Text: "New Name", Widget: newInput},
 		}
-
+		repo := state.RepoPath
+		checkdir, err := os.Stat(repo)
+		if err != nil || !checkdir.IsDir() {
+			dialog.ShowInformation("Error", "invalid directory path", w)
+			return
+		}
 		dialog.ShowForm("Rename Branch", "Rename", "Cancel", form, func(valid bool) {
 			if valid {
 				oldname := strings.TrimSpace(oldInput.Text)
@@ -539,7 +544,7 @@ Branch`, func() {
 					dialog.ShowInformation("Error", "Both old and new branch names are required", w)
 					return
 				}
-				out, err := git.BranchRename(state.RepoPath, oldname, newname)
+				out, err := git.BranchRename(oldname, newname)
 				if err != nil {
 					output.SetText("error: " + err.Error())
 				} else {
@@ -548,4 +553,5 @@ Branch`, func() {
 			}
 		}, w)
 	})
+
 }

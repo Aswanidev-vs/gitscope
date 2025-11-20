@@ -180,12 +180,11 @@ func Revert(commitHash string) (string, error) {
 	return string(output), err
 }
 func Clone(repoPath, CloneUrl string) (string, error) {
-	repo := state.RepoPath
-	checkdir, err := os.Stat(repo)
+	checkdir, err := os.Stat(repoPath)
 	if err != nil || !checkdir.IsDir() {
 		return "", errors.New("invalid directory path")
 	}
-	cmd := exec.Command("git", "-C", repo, "clone", CloneUrl)
+	cmd := exec.Command("git", "clone", CloneUrl, repoPath)
 	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
 	out, err := cmd.CombinedOutput()
 
@@ -263,12 +262,8 @@ func Reflog(repoPath string) (string, error) {
 	return string(out), nil
 }
 
-func BranchRename(repoPath, oldname, newname string) (string, error) {
-	repo := repoPath
-	checkdir, err := os.Stat(repo)
-	if err != nil || !checkdir.IsDir() {
-		return "", errors.New("invalid directory path")
-	}
+func BranchRename(oldname, newname string) (string, error) {
+	repo := state.RepoPath
 	cmd := exec.Command("git", "-C", repo, "branch", "-m", oldname, newname)
 	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
 	out, err := cmd.CombinedOutput()
