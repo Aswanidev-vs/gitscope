@@ -262,3 +262,18 @@ func Reflog(repoPath string) (string, error) {
 	}
 	return string(out), nil
 }
+
+func BranchRename(repoPath, oldname, newname string) (string, error) {
+	repo := repoPath
+	checkdir, err := os.Stat(repo)
+	if err != nil || !checkdir.IsDir() {
+		return "", errors.New("invalid directory path")
+	}
+	cmd := exec.Command("git", "-C", repo, "branch", "-m", oldname, newname)
+	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		return string(out), fmt.Errorf("branch rename failed: %v\n%s", err, string(out))
+	}
+	return "Branch renamed from " + oldname + " to " + newname, nil
+}

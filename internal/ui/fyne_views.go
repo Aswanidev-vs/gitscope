@@ -112,7 +112,10 @@ func dashBoardPage(w fyne.Window) fyne.CanvasObject {
 	Reflogbtn.Resize(fyne.NewSize(100, 40))
 	Reflogbtn.Move(fyne.NewPos(1, 450))
 
-	return container.NewWithoutLayout(initBtn, stageBtn, commitBtn, statusBtn, pushBtn, logBtn, revertBtn, cloneBtn, Branchbtn, PullBtn, clearBtn, Reflogbtn, output)
+	BranchRenameBtn := BranchRenameButton(w, output)
+	BranchRenameBtn.Resize(fyne.NewSize(100, 40))
+	BranchRenameBtn.Move(fyne.NewPos(110, 450))
+	return container.NewWithoutLayout(initBtn, stageBtn, commitBtn, statusBtn, pushBtn, logBtn, revertBtn, cloneBtn, Branchbtn, PullBtn, clearBtn, Reflogbtn, BranchRenameBtn, output)
 }
 func InitButton(output *widget.Entry) *widget.Button {
 	return widget.NewButton("Init", func() {
@@ -512,5 +515,37 @@ func ReflogButton(w fyne.Window, output *widget.Entry) *widget.Button {
 		} else {
 			output.SetText(out)
 		}
+	})
+}
+
+func BranchRenameButton(w fyne.Window, output *widget.Entry) *widget.Button {
+	return widget.NewButton(`Rename
+Branch`, func() {
+		oldInput := widget.NewEntry()
+		oldInput.SetPlaceHolder("Current branch name")
+		newInput := widget.NewEntry()
+		newInput.SetPlaceHolder("New branch name")
+
+		form := []*widget.FormItem{
+			{Text: "Old Name", Widget: oldInput},
+			{Text: "New Name", Widget: newInput},
+		}
+
+		dialog.ShowForm("Rename Branch", "Rename", "Cancel", form, func(valid bool) {
+			if valid {
+				oldname := strings.TrimSpace(oldInput.Text)
+				newname := strings.TrimSpace(newInput.Text)
+				if oldname == "" || newname == "" {
+					dialog.ShowInformation("Error", "Both old and new branch names are required", w)
+					return
+				}
+				out, err := git.BranchRename(state.RepoPath, oldname, newname)
+				if err != nil {
+					output.SetText("error: " + err.Error())
+				} else {
+					output.SetText(out)
+				}
+			}
+		}, w)
 	})
 }
