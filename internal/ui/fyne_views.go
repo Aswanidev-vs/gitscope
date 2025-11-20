@@ -3,11 +3,14 @@ package ui
 import (
 	"errors"
 	"fmt"
+	"net/url"
 	"os"
 	"os/exec"
 	"strings"
+	"syscall"
 
 	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/widget"
@@ -36,14 +39,21 @@ func RepositoryPage(w fyne.Window) fyne.CanvasObject {
 	NewRepo := core.CreateNewRepo(w, func(s string) {
 		dialog.ShowInformation("Repo command ", s, w)
 	})
-	NewRepo.Resize(fyne.NewSize(400, 500))
-	NewRepo.Move(fyne.NewPos(1, 500))
+	// NewRepo.Resize(fyne.NewSize(400, 500))
+	// NewRepo.Move(fyne.NewPos(1, 500))
 
+	ExistRepo := core.ExistingRepo(w, func(cmdText string) {
+		helpers.ExistingRepoCmd(w, state.RepoPath, cmdText)
+	})
+
+	// ExistRepo.Resize(fyne.NewSize(250, 300))
+	// ExistRepo.Move(fyne.NewPos(1, 600))
 	return container.NewVBox(
 		widget.NewLabel("Repository Setup"),
 		browseBtn,
 		output,
 		NewRepo,
+		ExistRepo,
 	)
 }
 
@@ -98,7 +108,11 @@ func dashBoardPage(w fyne.Window) fyne.CanvasObject {
 	PullBtn.Resize(fyne.NewSize(100, 40))
 	PullBtn.Move(fyne.NewPos(439, 350))
 
-	return container.NewWithoutLayout(initBtn, stageBtn, commitBtn, statusBtn, pushBtn, logBtn, revertBtn, cloneBtn, Branchbtn, PullBtn, clearBtn, output)
+	Reflogbtn := ReflogButton(w, output)
+	Reflogbtn.Resize(fyne.NewSize(100, 40))
+	Reflogbtn.Move(fyne.NewPos(1, 450))
+
+	return container.NewWithoutLayout(initBtn, stageBtn, commitBtn, statusBtn, pushBtn, logBtn, revertBtn, cloneBtn, Branchbtn, PullBtn, clearBtn, Reflogbtn, output)
 }
 func InitButton(output *widget.Entry) *widget.Button {
 	return widget.NewButton("Init", func() {
@@ -134,7 +148,14 @@ func StageButton(output *widget.Entry) *widget.Button {
 }
 
 func CommitButton(w fyne.Window) *widget.Button {
+
 	return widget.NewButton("Commit", func() {
+		repo := state.RepoPath
+		checkdir, err := os.Stat(repo)
+		if err != nil || !checkdir.IsDir() {
+			dialog.ShowInformation("invalid repository path", "Please select a valid repository path before commit.", w)
+			return
+		}
 		input := widget.NewEntry()
 		form := []*widget.FormItem{
 			{Text: "Message", Widget: input},
@@ -156,41 +177,95 @@ func CommitButton(w fyne.Window) *widget.Button {
 		}, w)
 	})
 }
-func PushButton(w fyne.Window) fyne.CanvasObject {
 
+func PushButton(w fyne.Window) fyne.CanvasObject {
 	branchSelectorUI, getBranch := helpers.BranchSelector(state.RepoPath, w)
+
 	pushBtn := widget.NewButton("Push", func() {
-		if state.RepoPath == "" {
-			dialog.ShowError(errors.New("No repository selected"), w)
+		repoPath := state.RepoPath
+		if repoPath == "" {
+			dialog.ShowError(errors.New("No repository selected."), w)
 			return
 		}
+
+		// 1️⃣ Check if initialized
+		if !helpers.IsInitialized(repoPath) {
+			dialog.ShowInformation("Git Initialization", "Repository is not initialized.\nPlease run git init first.", w)
+			return
+		}
+
 		branch := getBranch()
 		if branch == "" {
-			dialog.ShowError(errors.New("No branch selected"), w)
+			dialog.ShowError(errors.New("No branch selected."), w)
 			return
 		}
 
-		progress := dialog.NewProgressInfinite("Running Commands", "Please wait while commands are executing...", w)
+		// 2️⃣ Check if there are unstaged files
+		statusCmd := exec.Command("git", "-C", repoPath, "status", "--porcelain")
+		statusCmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
+		out, err := statusCmd.Output()
+		if err != nil {
+			dialog.ShowError(fmt.Errorf("Failed to check git status: %v", err), w)
+			return
+		}
 
-		go func() {
-			progress.Show()
-			output, err := git.Push(state.RepoPath, branch)
-			progress.Hide()
-			dialog.ShowInformation("Push Success", "Repository pushed successfully.", w)
-			if err != nil {
-				dialog.ShowError(fmt.Errorf("Push failed:\n%v\n\n%s", err, output), w)
-				return
+		hasUnstaged := false
+		hasStaged := false
+
+		lines := strings.Split(strings.TrimSpace(string(out)), "\n")
+		for _, line := range lines {
+			if len(line) < 2 {
+				continue
 			}
+			if line[0] == ' ' && line[1] != ' ' {
+				hasUnstaged = true // modified but not staged
+			}
+			if line[0] != ' ' {
+				hasStaged = true // staged file
+			}
+		}
 
+		if hasUnstaged && !hasStaged {
+			dialog.ShowInformation("Stage Required", "You have unstaged changes.\nPlease stage them before committing.", w)
+			return
+		}
+
+		// 3️⃣ Check if staged but not committed
+		diffCmd := exec.Command("git", "-C", repoPath, "diff", "--cached", "--name-only")
+		diffCmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
+		diffOut, _ := diffCmd.Output()
+		if len(strings.TrimSpace(string(diffOut))) > 0 {
+			dialog.ShowInformation("Commit Required", "You have staged files but no commit yet.\nPlease commit before pushing.", w)
+			return
+		}
+
+		// 4️⃣ Check if there are commits to push
+		cherryCmd := exec.Command("git", "-C", repoPath, "cherry", "-v")
+		cherryCmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
+		cherryOut, _ := cherryCmd.Output()
+		if len(strings.TrimSpace(string(cherryOut))) == 0 {
+			dialog.ShowInformation("No Commits to Push", "No new commits to push.\nMake a commit first.", w)
+			return
+		}
+
+		// 5️⃣ Push if all good
+		progress := dialog.NewProgressInfinite("Pushing Repository", "Please wait...", w)
+		go func() {
+			fyne.Do(func() { progress.Show() })
+			output, err := git.Push(repoPath, branch)
+			fyne.Do(func() {
+				progress.Hide()
+				if err != nil {
+					dialog.ShowError(fmt.Errorf("Push failed:\n%v\n\n%s", err, output), w)
+					return
+				}
+				dialog.ShowInformation("Push Success", "Repository pushed successfully.", w)
+			})
 		}()
 	})
 
-	return container.NewVBox(
-		pushBtn,
-		branchSelectorUI,
-	)
+	return container.NewVBox(pushBtn, branchSelectorUI)
 }
-
 func LogButton(output *widget.Entry) *widget.Button {
 	return widget.NewButton("Log", func() {
 		out, err := git.Log(state.RepoPath)
@@ -202,6 +277,7 @@ func LogButton(output *widget.Entry) *widget.Button {
 	})
 }
 func RevertButton(w fyne.Window) *widget.Button {
+
 	return widget.NewButton("Revert", func() {
 		if state.RepoPath == "" {
 			dialog.ShowInformation("Missing Clone Destination", "Please select or create an empty folder before cloning the repository.", w)
@@ -244,7 +320,6 @@ func CloneButton(w fyne.Window) *widget.Button {
 			return
 		}
 
-		// Optional: validate that folder is truly empty
 		files, err := os.ReadDir(state.RepoPath)
 		if err != nil {
 			dialog.ShowError(fmt.Errorf("Unable to read target folder: %w", err), w)
@@ -356,7 +431,7 @@ func PullButton(w fyne.Window) fyne.CanvasObject {
 
 				if reset {
 					// Perform optional reset
-					sha, err := git.GetPreviousCommit(state.RepoPath)
+					sha, err := helpers.GetPreviousCommit(state.RepoPath)
 					if err != nil {
 						dialog.ShowError(err, w)
 						return
@@ -391,4 +466,51 @@ func PullButton(w fyne.Window) fyne.CanvasObject {
 		pullBtn,
 		branchSelectorUI,
 	)
+}
+
+func SettingPage(w fyne.Window) fyne.CanvasObject {
+	logo := canvas.NewImageFromFile("assets/icons/gitscope_logo_v6.png")
+	logo.FillMode = canvas.ImageFillContain
+
+	// About text (professional tone and cleaner formatting)
+	f1 := widget.NewLabel("GitScope is a modern, lightweight, and visually intuitive Git client built with Go and Fyne. It simplifies essential")
+	f2 := widget.NewLabel("version control operations making Git easier to use for both beginners and experienced developers.")
+	f3 := widget.NewLabel("Version: 1.0.0")
+	f4 := widget.NewLabel("Developer: Aswanidev VS")
+
+	// GitHub link
+	link := widget.NewHyperlink("🔗 View Project on GitHub", &url.URL{
+		Scheme: "https",
+		Host:   "github.com",
+		Path:   "Aswanidev-vs/GitScope",
+	})
+
+	// Foreground layout (content)
+	content := container.NewVBox(
+		widget.NewLabelWithStyle("About GitScope", fyne.TextAlignCenter, fyne.TextStyle{Bold: true}),
+		logo,
+		f1,
+		f2,
+		f3,
+		f4,
+		link,
+	)
+	centeredContent := container.NewCenter(content)
+
+	return container.NewStack(centeredContent)
+}
+func ReflogButton(w fyne.Window, output *widget.Entry) *widget.Button {
+	return widget.NewButton("Reflog", func() {
+		// Sync local repoPath with global state
+		if state.RepoPath == "" {
+			dialog.ShowInformation("Repository Not Selected", "Cannot show the reflog because no Git repository has been selected. Please choose a repository and try again.", w)
+			return
+		}
+		out, err := git.Reflog(state.RepoPath)
+		if err != nil {
+			output.SetText("error: " + err.Error())
+		} else {
+			output.SetText(out)
+		}
+	})
 }

@@ -5,9 +5,11 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"runtime"
 	"strings"
 	"sync"
+	"syscall"
 	"time"
 
 	"fyne.io/fyne/v2"
@@ -120,7 +122,13 @@ func NewRepoCmd(w fyne.Window, repoPath string, cmdText string) fyne.CanvasObjec
 	return nil
 }
 func ListPush(repoPath string) ([]string, error) {
-	cmd := exec.Command("git", "branch", "--list")
+	if repoPath == "" {
+		return nil, errors.New("repository path cannot be empty")
+	}
+
+	cmd := exec.Command("git", "-C", repoPath, "branch", "--list")
+	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
+
 	cmd.Dir = repoPath
 
 	output, err := cmd.Output()
@@ -145,6 +153,7 @@ func ListPush(repoPath string) ([]string, error) {
 }
 
 func BranchSelector(repoPath string, w fyne.Window) (fyne.CanvasObject, func() string) {
+
 	stop := make(chan struct{})
 
 	selectEntry := widget.NewSelectEntry([]string{"Loading..."})
@@ -154,11 +163,12 @@ func BranchSelector(repoPath string, w fyne.Window) (fyne.CanvasObject, func() s
 	var mu sync.Mutex
 
 	updateList := func() {
-		branches, err := ListPush(repoPath)
+
+		branches, err := ListPush(state.RepoPath)
 		if err != nil {
-			fyne.Do(func() {
-				selectEntry.SetText("Error loading branches")
-			})
+			// fyne.Do(func() {
+			// 	selectEntry.SetText("Error loading branches")
+			// })
 			fmt.Println("Branch load error:", err)
 			return
 		}
@@ -217,4 +227,75 @@ func slicesEqual(a, b []string) bool {
 		}
 	}
 	return true
+}
+
+func ExistingRepoCmd(w fyne.Window, repoPath string, cmdText string) {
+	if state.RepoPath == "" {
+		dialog.ShowError(errors.New("No repository path selected"), w)
+		return
+	}
+
+	progress := dialog.NewProgressInfinite("Executing Commands", "Please wait while running git commands...", w)
+	progress.Show()
+
+	go func() {
+		defer progress.Hide()
+
+		lines := strings.Split(cmdText, "\n")
+		var allErrors []string
+
+		for _, line := range lines {
+			line = strings.TrimSpace(line)
+			if line == "" {
+				continue
+			}
+
+			parts := strings.Fields(line)
+			if len(parts) == 0 {
+				continue
+			}
+
+			cmd := exec.Command(parts[0], parts[1:]...)
+			cmd.Dir = repoPath
+			out, err := cmd.CombinedOutput()
+			fmt.Println("Running:", line)
+			fmt.Println("Output:", string(out))
+
+			if err != nil {
+				allErrors = append(allErrors, fmt.Sprintf("❌ %s\n%s", line, string(out)))
+			}
+		}
+
+		if len(allErrors) > 0 {
+			fyne.CurrentApp().SendNotification(&fyne.Notification{
+				Title:   "Git Command Errors",
+				Content: strings.Join(allErrors, "\n"),
+			})
+			dialog.ShowError(errors.New(strings.Join(allErrors, "\n")), w)
+		} else {
+			dialog.ShowInformation("Success", "All commands executed successfully!", w)
+		}
+	}()
+}
+func GetPreviousCommit(repoPath string) (string, error) {
+	repo := repoPath
+	checkdir, err := os.Stat(repo)
+	if err != nil || !checkdir.IsDir() {
+		return "", errors.New("invalid directory path")
+	}
+	cmd := exec.Command("git", "-C", repo, "rev-parse", "HEAD~1")
+	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
+	out, err := cmd.Output()
+	if err != nil {
+		return "", fmt.Errorf("No previous commit to reset: %v", err)
+	}
+	return strings.TrimSpace(string(out)), nil
+}
+func IsInitialized(repoPath string) bool {
+	gitDir := filepath.Join(repoPath, ".git")
+	info, err := os.Stat(gitDir)
+	if err != nil {
+		return false
+	}
+	return info.IsDir()
 }
