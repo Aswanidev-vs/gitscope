@@ -176,70 +176,92 @@ func CommitButton(w fyne.Window) *widget.Button {
 
 func PushButton(w fyne.Window) fyne.CanvasObject {
 	branchSelectorUI, getBranch := helpers.BranchSelector(state.RepoPath, w)
+
 	pushBtn := widget.NewButton("Push", func() {
-		if state.RepoPath == "" {
-			dialog.ShowError(errors.New("No repository selected"), w)
+		repoPath := state.RepoPath
+		if repoPath == "" {
+			dialog.ShowError(errors.New("No repository selected."), w)
 			return
 		}
 
-		// ensure path exists and is a directory
-		info, err := os.Stat(state.RepoPath)
-		if err != nil || !info.IsDir() {
-			dialog.ShowError(errors.New("Invalid repository path"), w)
+		// 1️⃣ Check if initialized
+		if !git.IsInitialized(repoPath) {
+			dialog.ShowInformation("Git Initialization", "Repository is not initialized.\nPlease run git init first.", w)
 			return
 		}
 
 		branch := getBranch()
 		if branch == "" {
-			dialog.ShowError(errors.New("No branch selected"), w)
+			dialog.ShowError(errors.New("No branch selected."), w)
 			return
 		}
 
-		if !git.IsInitialized(state.RepoPath) {
-			dialog.ShowInformation("Git Initialization", "Current repository is not initialized!", w)
-			return
-		}
-
-		// Check for any uncommitted changes (staged or unstaged)
-		statusCmd := exec.Command("git", "status", "--porcelain")
-		statusCmd.Dir = state.RepoPath
+		// 2️⃣ Check if there are unstaged files
+		statusCmd := exec.Command("git", "-C", repoPath, "status", "--porcelain")
 		statusCmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
-		statusOut, err := statusCmd.CombinedOutput()
+		out, err := statusCmd.Output()
 		if err != nil {
-			dialog.ShowError(fmt.Errorf("failed to check git status: %w\n%s", err, string(statusOut)), w)
-			return
-		}
-		if len(statusOut) > 0 {
-			dialog.ShowInformation("stage", "Not staged. Please stage them before pushing.", w)
+			dialog.ShowError(fmt.Errorf("Failed to check git status: %v", err), w)
 			return
 		}
 
-		// Ensure at least one commit exists (check HEAD)
-		revCmd := exec.Command("git", "rev-parse", "--verify", "HEAD")
-		revCmd.Dir = state.RepoPath
-		revCmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
-		if err := revCmd.Run(); err != nil {
-			dialog.ShowInformation("No Commits", "No commits found. You need to commit changes before pushing.", w)
-			return
-		}
+		hasUnstaged := false
+		hasStaged := false
 
-		progress := dialog.NewProgressInfinite("Running Commands", "Please wait while commands are executing...", w)
-
-		go func() {
-			progress.Show()
-			output, err := git.Push(state.RepoPath, branch)
-			progress.Hide()
-
-			if err != nil {
-				dialog.ShowError(fmt.Errorf("Push failed:\n%v\n\n%s", err, output), w)
-				return
+		lines := strings.Split(strings.TrimSpace(string(out)), "\n")
+		for _, line := range lines {
+			if len(line) < 2 {
+				continue
 			}
-			dialog.ShowInformation("Push Success", "Repository pushed successfully.", w)
+			if line[0] == ' ' && line[1] != ' ' {
+				hasUnstaged = true // modified but not staged
+			}
+			if line[0] != ' ' {
+				hasStaged = true // staged file
+			}
+		}
+
+		if hasUnstaged && !hasStaged {
+			dialog.ShowInformation("Stage Required", "You have unstaged changes.\nPlease stage them before committing.", w)
+			return
+		}
+
+		// 3️⃣ Check if staged but not committed
+		diffCmd := exec.Command("git", "-C", repoPath, "diff", "--cached", "--name-only")
+		diffCmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
+		diffOut, _ := diffCmd.Output()
+		if len(strings.TrimSpace(string(diffOut))) > 0 {
+			dialog.ShowInformation("Commit Required", "You have staged files but no commit yet.\nPlease commit before pushing.", w)
+			return
+		}
+
+		// 4️⃣ Check if there are commits to push
+		cherryCmd := exec.Command("git", "-C", repoPath, "cherry", "-v")
+		cherryCmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
+		cherryOut, _ := cherryCmd.Output()
+		if len(strings.TrimSpace(string(cherryOut))) == 0 {
+			dialog.ShowInformation("No Commits to Push", "No new commits to push.\nMake a commit first.", w)
+			return
+		}
+
+		// 5️⃣ Push if all good
+		progress := dialog.NewProgressInfinite("Pushing Repository", "Please wait...", w)
+		go func() {
+			fyne.Do(func() { progress.Show() })
+			output, err := git.Push(repoPath, branch)
+			fyne.Do(func() {
+				progress.Hide()
+				if err != nil {
+					dialog.ShowError(fmt.Errorf("Push failed:\n%v\n\n%s", err, output), w)
+					return
+				}
+				dialog.ShowInformation("Push Success", "Repository pushed successfully.", w)
+			})
 		}()
 	})
+
 	return container.NewVBox(pushBtn, branchSelectorUI)
 }
-
 func LogButton(output *widget.Entry) *widget.Button {
 	return widget.NewButton("Log", func() {
 		out, err := git.Log(state.RepoPath)
@@ -446,7 +468,6 @@ func PullButton(w fyne.Window) fyne.CanvasObject {
 func SettingPage(w fyne.Window) fyne.CanvasObject {
 	logo := canvas.NewImageFromFile("assets/icons/gitscope_logo_v6.png")
 	logo.FillMode = canvas.ImageFillContain
-	logo.SetMinSize(fyne.NewSize(120, 120))
 
 	// About text (professional tone and cleaner formatting)
 	f1 := widget.NewLabel("GitScope is a modern, lightweight, and visually intuitive Git client built with Go and Fyne. It simplifies essential")

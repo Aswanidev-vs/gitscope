@@ -78,14 +78,14 @@ func SideBar(w fyne.Window) (fyne.CanvasObject, fyne.CanvasObject) {
 	// settingsPage := widget.NewLabel("application settings")
 	settingsPage := SettingPage(w)
 
-	settingsbtn = ttwidget.NewButtonWithIcon("", theme.SettingsIcon(), func() {
+	settingsbtn = ttwidget.NewButtonWithIcon("", theme.InfoIcon(), func() {
 		SetActive(settingsbtn, []*ttwidget.Button{Addbtn, Repobtn})
 		w.SetContent(fynetooltip.AddWindowToolTipLayer(
 			container.NewBorder(nil, nil, sidebar, nil, container.NewCenter(settingsPage)),
 			w.Canvas(),
 		))
 	})
-	settingsbtn.SetToolTip("settings")
+	settingsbtn.SetToolTip("About")
 
 	// Sidebar layout: Repo first
 	sidebar = container.NewVBox(
