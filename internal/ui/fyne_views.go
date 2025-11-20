@@ -242,14 +242,14 @@ func PushButton(w fyne.Window) fyne.CanvasObject {
 			return
 		}
 
-		// 4️⃣ Check if there are commits to push
-		cherryCmd := exec.Command("git", "-C", repoPath, "cherry", "-v")
-		cherryCmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
-		cherryOut, _ := cherryCmd.Output()
-		if len(strings.TrimSpace(string(cherryOut))) == 0 {
-			dialog.ShowInformation("No Commits to Push", "No new commits to push.\nMake a commit first.", w)
-			return
-		}
+		// // 4️⃣ Check if there are commits to push
+		// cherryCmd := exec.Command("git", "-C", repoPath, "cherry", "-v")
+		// cherryCmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
+		// cherryOut, _ := cherryCmd.Output()
+		// if len(strings.TrimSpace(string(cherryOut))) == 0 {
+		// 	dialog.ShowInformation("No Commits to Push", "No new commits to push.\nMake a commit first.", w)
+		// 	return
+		// }
 
 		// 5️⃣ Push if all good
 		progress := dialog.NewProgressInfinite("Pushing Repository", "Please wait...", w)
