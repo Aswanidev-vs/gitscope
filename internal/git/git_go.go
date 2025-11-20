@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
-	"path/filepath"
 	"strings"
 	"syscall"
 
@@ -241,25 +240,18 @@ func Pull(repoPath, branch string) (string, error) {
 	}
 	return "Successfully pulled branch: " + branch, nil
 }
-func GetPreviousCommit(repoPath string) (string, error) {
+
+func Reflog(repoPath string) (string, error) {
 	repo := repoPath
 	checkdir, err := os.Stat(repo)
 	if err != nil || !checkdir.IsDir() {
 		return "", errors.New("invalid directory path")
 	}
-	cmd := exec.Command("git", "-C", repo, "rev-parse", "HEAD~1")
+	cmd := exec.Command("git", "-C", repo, "reflog")
 	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
-	out, err := cmd.Output()
+	out, err := cmd.CombinedOutput()
 	if err != nil {
-		return "", fmt.Errorf("No previous commit to reset: %v", err)
+		return string(out), fmt.Errorf("An issue occurred while reflog: %v\n%s", err, string(out))
 	}
-	return strings.TrimSpace(string(out)), nil
-}
-func IsInitialized(repoPath string) bool {
-	gitDir := filepath.Join(repoPath, ".git")
-	info, err := os.Stat(gitDir)
-	if err != nil {
-		return false
-	}
-	return info.IsDir()
+	return string(out), nil
 }

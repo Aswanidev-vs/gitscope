@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"runtime"
 	"strings"
 	"sync"
@@ -275,4 +276,26 @@ func ExistingRepoCmd(w fyne.Window, repoPath string, cmdText string) {
 			dialog.ShowInformation("Success", "All commands executed successfully!", w)
 		}
 	}()
+}
+func GetPreviousCommit(repoPath string) (string, error) {
+	repo := repoPath
+	checkdir, err := os.Stat(repo)
+	if err != nil || !checkdir.IsDir() {
+		return "", errors.New("invalid directory path")
+	}
+	cmd := exec.Command("git", "-C", repo, "rev-parse", "HEAD~1")
+	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
+	out, err := cmd.Output()
+	if err != nil {
+		return "", fmt.Errorf("No previous commit to reset: %v", err)
+	}
+	return strings.TrimSpace(string(out)), nil
+}
+func IsInitialized(repoPath string) bool {
+	gitDir := filepath.Join(repoPath, ".git")
+	info, err := os.Stat(gitDir)
+	if err != nil {
+		return false
+	}
+	return info.IsDir()
 }

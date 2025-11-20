@@ -108,7 +108,11 @@ func dashBoardPage(w fyne.Window) fyne.CanvasObject {
 	PullBtn.Resize(fyne.NewSize(100, 40))
 	PullBtn.Move(fyne.NewPos(439, 350))
 
-	return container.NewWithoutLayout(initBtn, stageBtn, commitBtn, statusBtn, pushBtn, logBtn, revertBtn, cloneBtn, Branchbtn, PullBtn, clearBtn, output)
+	Reflogbtn := ReflogButton(w, output)
+	Reflogbtn.Resize(fyne.NewSize(100, 40))
+	Reflogbtn.Move(fyne.NewPos(1, 450))
+
+	return container.NewWithoutLayout(initBtn, stageBtn, commitBtn, statusBtn, pushBtn, logBtn, revertBtn, cloneBtn, Branchbtn, PullBtn, clearBtn, Reflogbtn, output)
 }
 func InitButton(output *widget.Entry) *widget.Button {
 	return widget.NewButton("Init", func() {
@@ -185,7 +189,7 @@ func PushButton(w fyne.Window) fyne.CanvasObject {
 		}
 
 		// 1️⃣ Check if initialized
-		if !git.IsInitialized(repoPath) {
+		if !helpers.IsInitialized(repoPath) {
 			dialog.ShowInformation("Git Initialization", "Repository is not initialized.\nPlease run git init first.", w)
 			return
 		}
@@ -316,7 +320,6 @@ func CloneButton(w fyne.Window) *widget.Button {
 			return
 		}
 
-		// Optional: validate that folder is truly empty
 		files, err := os.ReadDir(state.RepoPath)
 		if err != nil {
 			dialog.ShowError(fmt.Errorf("Unable to read target folder: %w", err), w)
@@ -428,7 +431,7 @@ func PullButton(w fyne.Window) fyne.CanvasObject {
 
 				if reset {
 					// Perform optional reset
-					sha, err := git.GetPreviousCommit(state.RepoPath)
+					sha, err := helpers.GetPreviousCommit(state.RepoPath)
 					if err != nil {
 						dialog.ShowError(err, w)
 						return
@@ -495,4 +498,19 @@ func SettingPage(w fyne.Window) fyne.CanvasObject {
 	centeredContent := container.NewCenter(content)
 
 	return container.NewStack(centeredContent)
+}
+func ReflogButton(w fyne.Window, output *widget.Entry) *widget.Button {
+	return widget.NewButton("Reflog", func() {
+		// Sync local repoPath with global state
+		if state.RepoPath == "" {
+			dialog.ShowInformation("Repository Not Selected", "Cannot show the reflog because no Git repository has been selected. Please choose a repository and try again.", w)
+			return
+		}
+		out, err := git.Reflog(state.RepoPath)
+		if err != nil {
+			output.SetText("error: " + err.Error())
+		} else {
+			output.SetText(out)
+		}
+	})
 }
