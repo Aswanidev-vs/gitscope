@@ -50,13 +50,13 @@ func App() {
 func SideBar(w fyne.Window) (fyne.CanvasObject, fyne.CanvasObject) {
 
 	var sidebar fyne.CanvasObject
-	var Addbtn, Repobtn, settingsbtn *ttwidget.Button
+	var Addbtn, Repobtn, settingsbtn, documentbtn *ttwidget.Button
 
 	// Repo button
 	Repobtn = ttwidget.NewButtonWithIcon("", theme.FolderOpenIcon(), nil)
 	Repobtn.SetToolTip("Repo")
 	Repobtn.OnTapped = func() {
-		SetActive(Repobtn, []*ttwidget.Button{Addbtn, settingsbtn})
+		SetActive(Repobtn, []*ttwidget.Button{Addbtn, settingsbtn, documentbtn})
 		reposPage := RepositoryPage(w)
 		w.SetContent(fynetooltip.AddWindowToolTipLayer(
 			container.NewBorder(nil, nil, sidebar, nil, reposPage),
@@ -67,7 +67,7 @@ func SideBar(w fyne.Window) (fyne.CanvasObject, fyne.CanvasObject) {
 	// Dashboard button
 	dashboardPage := dashBoardPage(w)
 	Addbtn = ttwidget.NewButtonWithIcon("", theme.ContentAddIcon(), func() {
-		SetActive(Addbtn, []*ttwidget.Button{Repobtn, settingsbtn})
+		SetActive(Addbtn, []*ttwidget.Button{Repobtn, settingsbtn, documentbtn})
 		w.SetContent(fynetooltip.AddWindowToolTipLayer(
 			container.NewBorder(nil, nil, sidebar, nil, dashboardPage),
 			w.Canvas(),
@@ -75,11 +75,10 @@ func SideBar(w fyne.Window) (fyne.CanvasObject, fyne.CanvasObject) {
 	})
 	Addbtn.SetToolTip("Git common operations")
 
-	// settingsPage := widget.NewLabel("application settings")
+	// Settings button
 	settingsPage := SettingPage(w)
-
 	settingsbtn = ttwidget.NewButtonWithIcon("", theme.InfoIcon(), func() {
-		SetActive(settingsbtn, []*ttwidget.Button{Addbtn, Repobtn})
+		SetActive(settingsbtn, []*ttwidget.Button{Addbtn, Repobtn, documentbtn})
 		w.SetContent(fynetooltip.AddWindowToolTipLayer(
 			container.NewBorder(nil, nil, sidebar, nil, container.NewCenter(settingsPage)),
 			w.Canvas(),
@@ -87,17 +86,29 @@ func SideBar(w fyne.Window) (fyne.CanvasObject, fyne.CanvasObject) {
 	})
 	settingsbtn.SetToolTip("About")
 
+	// Documentation button
+	documentbtn = ttwidget.NewButtonWithIcon("", theme.DocumentIcon(), nil)
+	documentbtn.SetToolTip("Documentation")
+	documentbtn.OnTapped = func() {
+		SetActive(documentbtn, []*ttwidget.Button{Addbtn, Repobtn, settingsbtn})
+		documentPage := widget.NewLabel("Documentation page") // Placeholder
+		w.SetContent(fynetooltip.AddWindowToolTipLayer(
+			container.NewBorder(nil, nil, sidebar, nil, container.NewCenter(documentPage)),
+			w.Canvas(),
+		))
+	}
+
 	// Sidebar layout: Repo first
 	sidebar = container.NewVBox(
-
 		Repobtn,
 		Addbtn,
 		settingsbtn,
+		documentbtn,
 		layout.NewSpacer(),
 	)
 
 	// Set default active tab to Repo
-	SetActive(Repobtn, []*ttwidget.Button{Addbtn, settingsbtn})
+	SetActive(Repobtn, []*ttwidget.Button{Addbtn, settingsbtn, documentbtn})
 	reposPage := RepositoryPage(w)
 	w.SetContent(fynetooltip.AddWindowToolTipLayer(
 		container.NewBorder(nil, nil, sidebar, nil, reposPage),
@@ -105,7 +116,6 @@ func SideBar(w fyne.Window) (fyne.CanvasObject, fyne.CanvasObject) {
 	))
 
 	return sidebar, reposPage
-
 }
 
 func SetActive(active *ttwidget.Button, others []*ttwidget.Button) {
