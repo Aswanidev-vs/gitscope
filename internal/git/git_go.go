@@ -114,7 +114,7 @@ func Push(repoPath, branch string) (string, error) {
 		return "", errors.New("invalid directory path")
 	}
 
-	cmd := exec.Command("git", "-C", repo, "push", "origin", branch)
+	cmd := exec.Command("git", "-C", repo, "push", "-u", "origin", branch)
 	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
 	out, err := cmd.CombinedOutput()
 	if err != nil {
