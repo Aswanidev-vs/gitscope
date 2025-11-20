@@ -120,6 +120,13 @@ func Push(repoPath, branch string) (string, error) {
 	if err != nil {
 		// Check if push failed because branch is behind remote
 		if strings.Contains(string(out), "non-fast-forward") || strings.Contains(string(out), "behind its remote") {
+			// Switch to the branch
+			checkoutCmd := exec.Command("git", "-C", repo, "checkout", branch)
+			checkoutCmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
+			checkoutOut, checkoutErr := checkoutCmd.CombinedOutput()
+			if checkoutErr != nil {
+				return string(checkoutOut), fmt.Errorf("checkout failed before pull: %v\n%s", checkoutErr, string(checkoutOut))
+			}
 			// Pull first to integrate remote changes
 			pullCmd := exec.Command("git", "-C", repo, "pull", "origin", branch, "--no-edit")
 			pullCmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
@@ -128,9 +135,9 @@ func Push(repoPath, branch string) (string, error) {
 				return string(pullOut), fmt.Errorf("pull failed before push: %v\n%s", pullErr, string(pullOut))
 			}
 			// Try push again
-			cmd := exec.Command("git", "-C", repo, "push", "-u", "origin", branch)
-			cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
-			out2, err2 := cmd.CombinedOutput()
+			pushCmd := exec.Command("git", "-C", repo, "push", "-u", "origin", branch)
+			pushCmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
+			out2, err2 := pushCmd.CombinedOutput()
 			if err2 != nil {
 				return string(out2), fmt.Errorf("push failed after pull: %v\n%s", err2, string(out2))
 			}
