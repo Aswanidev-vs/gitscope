@@ -208,7 +208,14 @@ func CreateBranch(repoPath, branchname string) (string, error) {
 	if err != nil {
 		return string(out), fmt.Errorf("Creating New Branch failed:%v\n%s", err, string(out))
 	}
-	return "successfully Created New Branch", nil
+	// Set upstream to origin/branchname
+	pushCmd := exec.Command("git", "-C", repo, "push", "-u", "origin", branchname)
+	pushCmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
+	pushOut, pushErr := pushCmd.CombinedOutput()
+	if pushErr != nil {
+		return string(pushOut), fmt.Errorf("Creating New Branch succeeded, but setting upstream failed:%v\n%s", pushErr, string(pushOut))
+	}
+	return "successfully Created New Branch and set upstream", nil
 
 }
 func DeleteBranch(repoPath, branchname string) (string, error) {
