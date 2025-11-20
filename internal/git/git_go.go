@@ -287,6 +287,20 @@ func Reflog(repoPath string) (string, error) {
 	return string(out), nil
 }
 
+func SwitchBranch(repoPath, branchname string) (string, error) {
+	checkdir, err := os.Stat(repoPath)
+	if err != nil || !checkdir.IsDir() {
+		return "", errors.New("invalid directory path")
+	}
+	cmd := exec.Command("git", "-C", repoPath, "switch", branchname)
+	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		return string(out), fmt.Errorf("switch branch failed: %v\n%s", err, string(out))
+	}
+	return "Switched to branch " + branchname, nil
+}
+
 func BranchRename(oldname, newname string) (string, error) {
 	repo := state.RepoPath
 	cmd := exec.Command("git", "-C", repo, "branch", "-m", oldname, newname)

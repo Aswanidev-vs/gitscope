@@ -112,10 +112,14 @@ func dashBoardPage(w fyne.Window) fyne.CanvasObject {
 	Reflogbtn.Resize(fyne.NewSize(100, 40))
 	Reflogbtn.Move(fyne.NewPos(1, 450))
 
+	SwitchBranchBtn := SwitchBranchButton(w)
+	SwitchBranchBtn.Resize(fyne.NewSize(100, 40))
+	SwitchBranchBtn.Move(fyne.NewPos(110, 450))
+
 	BranchRenameBtn := BranchRenameButton(w, output)
 	BranchRenameBtn.Resize(fyne.NewSize(100, 40))
-	BranchRenameBtn.Move(fyne.NewPos(110, 450))
-	return container.NewWithoutLayout(initBtn, stageBtn, commitBtn, statusBtn, pushBtn, logBtn, revertBtn, cloneBtn, Branchbtn, PullBtn, clearBtn, Reflogbtn, BranchRenameBtn, output)
+	BranchRenameBtn.Move(fyne.NewPos(220, 450))
+	return container.NewWithoutLayout(initBtn, stageBtn, commitBtn, statusBtn, pushBtn, logBtn, revertBtn, cloneBtn, Branchbtn, PullBtn, clearBtn, Reflogbtn, SwitchBranchBtn, BranchRenameBtn, output)
 }
 func InitButton(output *widget.Entry) *widget.Button {
 	return widget.NewButton("Init", func() {
@@ -516,6 +520,31 @@ func ReflogButton(w fyne.Window, output *widget.Entry) *widget.Button {
 			output.SetText(out)
 		}
 	})
+}
+
+func SwitchBranchButton(w fyne.Window) fyne.CanvasObject {
+	branchSelectorUI, getBranch := helpers.BranchSelector(state.RepoPath, w)
+
+	switchBtn := widget.NewButton("Switch Branch", func() {
+		if state.RepoPath == "" {
+			dialog.ShowError(errors.New("No repository selected"), w)
+			return
+		}
+		branch := getBranch()
+		if branch == "" {
+			dialog.ShowError(errors.New("No branch selected"), w)
+			return
+		}
+
+		output, err := git.SwitchBranch(state.RepoPath, branch)
+		if err != nil {
+			dialog.ShowError(fmt.Errorf("Switch branch failed:\n%v\n\n%s", err, output), w)
+			return
+		}
+		dialog.ShowInformation("Success", "Switched to branch: "+branch, w)
+	})
+
+	return container.NewVBox(switchBtn, branchSelectorUI)
 }
 
 func BranchRenameButton(w fyne.Window, output *widget.Entry) *widget.Button {
