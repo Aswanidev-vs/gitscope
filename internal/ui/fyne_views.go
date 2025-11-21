@@ -66,8 +66,17 @@ func dashBoardPage(w fyne.Window) fyne.CanvasObject {
 	output := widget.NewMultiLineEntry()
 
 	output.Resize(fyne.NewSize(500, 230))
-	output.SetPlaceHolder(`This area shows the output / responses for majority of the commands 
-that triggered by the buttons. You can also add your gitignore entries here..`)
+	output.SetPlaceHolder(`This area shows the output / responses for majority of the commands
+that are triggered by the buttons. You can also add your gitignore
+entries here.I meant .ext as a short form to refer
+to any extension like .go, .html, .css, etc.
+
+*.ext            → Ignore all .ext files everywhere
+/*.ext           → Only ignore .ext files in repo root
+folder/          → Ignore entire folder
+**/name.ext      → Ignore file no matter where it appears
+`)
+
 	output.Move(fyne.NewPos(0, 1))
 	clearBtn := widget.NewButton("Clear", func() {
 		output.SetText("") // Clears the content
@@ -419,7 +428,6 @@ func BranchButton(w fyne.Window) *widget.Button {
 			},
 		)
 
-		// Simulate clicking to open the dialog
 		dlg.Tapped(nil)
 	})
 
@@ -440,7 +448,6 @@ func PullButton(w fyne.Window) fyne.CanvasObject {
 			return
 		}
 
-		// Ask developer if they also want to reset before pulling
 		dialog.ShowConfirm("Pull Options", "Do you want to reset the last commit before pulling?", func(reset bool) {
 			progress := dialog.NewProgressInfinite("Running Commands", "Please wait while commands are executing...", w)
 			go func() {
@@ -448,7 +455,7 @@ func PullButton(w fyne.Window) fyne.CanvasObject {
 				defer progress.Hide()
 
 				if reset {
-					// Perform optional reset
+
 					sha, err := helpers.GetPreviousCommit(state.RepoPath)
 					if err != nil {
 						dialog.ShowError(err, w)
@@ -464,7 +471,6 @@ func PullButton(w fyne.Window) fyne.CanvasObject {
 
 				}
 
-				// Always perform pull
 				output, err := git.Pull(state.RepoPath, branch)
 				if err != nil {
 					dialog.ShowError(fmt.Errorf("Pull failed:\n%v\n\n%s", err, output), w)
@@ -490,20 +496,17 @@ func SettingPage(w fyne.Window) fyne.CanvasObject {
 	logo := canvas.NewImageFromFile("assets/icons/gitscope_logo_v6.png")
 	logo.FillMode = canvas.ImageFillContain
 
-	// About text (professional tone and cleaner formatting)
 	f1 := widget.NewLabel("GitScope is a modern, lightweight, and visually intuitive Git client built with Go and Fyne. It simplifies essential")
 	f2 := widget.NewLabel("version control operations making Git easier to use for both beginners and experienced developers.")
 	f3 := widget.NewLabel("Version: 1.0.0")
 	f4 := widget.NewLabel("Developer: Aswanidev VS")
 
-	// GitHub link
 	link := widget.NewHyperlink("🔗 View Project on GitHub", &url.URL{
 		Scheme: "https",
 		Host:   "github.com",
 		Path:   "Aswanidev-vs/GitScope",
 	})
 
-	// Foreground layout (content)
 	content := container.NewVBox(
 		widget.NewLabelWithStyle("About GitScope", fyne.TextAlignCenter, fyne.TextStyle{Bold: true}),
 		logo,
@@ -519,7 +522,7 @@ func SettingPage(w fyne.Window) fyne.CanvasObject {
 }
 func ReflogButton(w fyne.Window, output *widget.Entry) *widget.Button {
 	return widget.NewButton("Reflog", func() {
-		// Sync local repoPath with global state
+
 		if state.RepoPath == "" {
 			dialog.ShowInformation("Repository Not Selected", "Cannot show the reflog because no Git repository has been selected. Please choose a repository and try again.", w)
 			return
@@ -624,7 +627,7 @@ func GitIgnoreButton(output *widget.Entry, w fyne.Window) *widget.Button {
 
 		edit = true
 		gitignore = path
-		btn.SetText(".gitignore (Save)") // clear indication
+		btn.SetText(".gitignore (Save)")
 	}
 
 	return btn
