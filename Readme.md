@@ -1,93 +1,136 @@
-# gitscope
+# GitScope
 
-Gitscope is a small desktop GUI tool written in Go that provides a lightweight visual interface for common Git operations. It uses the Fyne GUI toolkit and executes Git commands under the hood, making it useful as a helper app for initializing repositories, staging/committing changes, pushing/pulling, branch management, and running custom git command sequences.
+GitScope is a modern, lightweight, and visually intuitive desktop GUI client for Git, built with Go and the Fyne toolkit. It simplifies essential version control operations, making Git more accessible for beginners and experienced developers alike. GitScope provides a user-friendly interface to perform common Git tasks without needing the command line, while still leveraging Git's powerful features under the hood.
 
-Key features
-- Select or create a repository folder using a folder picker
-- Initialize a Git repo, view status, stage changes, create commits
-- Push and pull with branch selection
-- Clone repositories into an empty folder
-- Create / delete branches through a dialog
-- Revert a commit by hash
-- Run a block of user-provided git commands or repo-creation commands (useful to paste a set of GitHub creation commands)
+## Key Features
 
-Quick start
+- **Repository Management**: Select or create local repositories using a folder picker.
+- **Initialization & Status**: Initialize new Git repositories and view repository status.
+- **Staging & Committing**: Stage changes and create commits with custom messages.
+- **Branching**: Create, delete, switch, and rename branches.
+- **Pushing & Pulling**: Push commits to remote repositories and pull changes with branch selection.
+- **Cloning**: Clone repositories into empty folders.
+- **History & Logs**: View commit logs, reflog, and revert commits by hash.
+- **GitIgnore Editing**: Edit or create `.gitignore` files directly in the app.
+- **Custom Commands**: Run user-provided Git command sequences for advanced operations.
+- **Cross-Platform**: Works on Windows, macOS, and Linux using Fyne's GUI toolkit.
 
-Prerequisites
-- Go 1.25+ installed (module requires go 1.25.3)
-- Git installed and available on PATH
-- (Optional) Fyne development dependencies are pulled by `go mod` automatically
+## Prerequisites
 
-Run locally (development)
+- **Go**: Version 1.25.3 or later (module requires go 1.25.3).
+- **Git**: Installed and available in your system's PATH.
+- **Fyne Dependencies**: Automatically pulled via `go mod` (optional manual setup for development).
 
-1. Clone the repo and change to its directory
+## Installation
 
-```bash
-cd g:/gitscope
-```
+### Option 1: Build from Source (Recommended for Development)
 
-2. Run the app
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/Aswanidev-vs/GitScope.git
+   cd GitScope
+   ```
 
-```bash
-go run main.go
-```
+2. Install dependencies:
+   ```bash
+   go mod tidy
+   ```
 
-Build
+3. Run the application:
+   ```bash
+   go run main.go
+   ```
 
-```bash
-go build -o gitscope.exe main.go
-```
+### Option 2: Build Executable
 
-On supported OSes the produced binary can be executed directly. The GUI uses Fyne and should work across desktop platforms (Windows, macOS, Linux). Ensure you have Git installed and accessible.
+1. Build the binary:
+   ```bash
+   go build -o gitscope main.go
+   ```
 
-How to use
-- Start the app.
-- Use "Select Repository" to choose or create a local target folder.
-- Use the Dashboard tab to run Init, Stage, Commit, Push, Pull, Log, Clone, Revert and Branch operations.
-- Use "Create New Repository" to paste a set of commands (for creating a GitHub repo and pushing). The app will attempt to run those commands in the selected folder.
+2. Run the executable:
+   - On Windows: `gitscope.exe`
+   - On macOS/Linux: `./gitscope`
 
-Project layout
+The built binary can be executed directly on supported platforms.
 
-- `main.go` — program entrypoint; calls `ui.App()`
-- `go.mod` — module and dependency declarations
-- `assets/` — icons and static assets (app icon used by the GUI)
+## Usage
+
+1. **Launch the App**: Run `go run main.go` or the built executable. The app checks for Git availability on startup.
+
+2. **Repository Setup**:
+   - Use "Select Repository" to choose an existing local folder.
+   - Use "Create New Repository" to paste commands for initializing a new repo (e.g., GitHub creation commands).
+   - Use "Existing Repository" for additional setup options.
+
+3. **Dashboard Operations**:
+   - **Init**: Initialize a Git repository in the selected folder.
+   - **Status**: View the current repository status.
+   - **Stage**: Add all changes to the staging area.
+   - **Commit**: Create a commit with a custom message.
+   - **Push**: Push commits to the remote repository (select branch).
+   - **Pull**: Pull changes from the remote (option to reset last commit).
+   - **Log**: View commit history in oneline format.
+   - **Reflog**: View reference logs.
+   - **Clone**: Clone a repository into an empty folder (provide GitHub URL).
+   - **Branch**: Create or delete branches.
+   - **Switch Branch**: Switch to a different branch.
+   - **Rename Branch**: Rename an existing branch.
+   - **Revert**: Revert a commit by hash.
+   - **GitIgnore (Edit)**: Edit the `.gitignore` file directly.
+
+4. **Settings**: View app information, version, and links.
+
+**Note**: The app executes Git commands via `os/exec`. Ensure Git is installed and in PATH. For security, avoid running untrusted command blocks.
+
+## Project Layout
+
+- `main.go` — Application entry point; initializes the UI.
+- `go.mod` & `go.sum` — Go module and dependency declarations.
+- `assets/` — Icons and static assets (app icon for the GUI).
 - `internal/`
-	- `core/manager.go` — higher-level GUI components for repo selection and new/existing repo forms
-	- `git/` — thin wrapper functions executing git commands (`init`, `status`, `commit`, `stage`, `push`, `clone`, `branch`, `pull`, `revert`, `log`)
-	- `helpers/` — helper utilities to run shell commands, branch selectors, run pasted command blocks and other GUI helpers
-	- `state/` — global runtime state (currently contains `RepoPath` string)
-	- `ui/` — Fyne app and views (`fyne_app.go`, `fyne_views.go`) implementing the GUI
-- `utils/` — small UI helpers (e.g. branch creation dialog)
-- `Readme.md` — this file
+  - `core/manager.go` — GUI components for repository selection and forms.
+  - `git/git_go.go` — Thin wrapper functions executing Git commands (init, status, commit, stage, push, clone, branch, pull, revert, log, reflog, etc.).
+  - `helpers/` — Utility functions for shell commands, branch selectors, and GUI helpers.
+  - `state/` — Global runtime state (e.g., current repository path).
+  - `ui/` — Fyne app and views (`fyne_app.go`, `fyne_views.go`) implementing the GUI.
+- `utils/` — Additional UI helpers (e.g., branch creation dialogs).
+- `Readme.md` — This file.
 
-Developer notes & known behavior
-- The app runs Git by calling external `git` commands (via `os/exec`). Git must be present in PATH.
-- Global state: `internal/state.RepoPath` is used widely to store the current selected folder. Be careful when changing it.
-- The helpers package has a `RullshellCommand` helper for cross-platform shell commands, but some code paths call `cmd /C` directly on Windows-specific commands; review these paths if running on non-Windows platforms.
-- The UI uses Fyne’s widget library plus a tooltip helper (`dweymouth/fyne-tooltip`).
+## Developer Notes
 
-Security & safety notes
-- The app executes arbitrary shell/git commands pasted in by the user (intended feature). Do not run untrusted command blocks.
+- **Git Execution**: Commands are run using `exec.Command` with `git` in the repository directory.
+- **Global State**: `internal/state.RepoPath` stores the selected folder; handle changes carefully.
+- **Cross-Platform Shell**: Uses `helpers.RunShellCommand` for portability, with some Windows-specific paths.
+- **Dependencies**: Relies on Fyne (fyne.io/fyne/v2) and fyne-tooltip for UI.
+- **Testing**: Consider unit tests for Git wrappers and integration tests with temporary repos.
 
-Suggestions / next steps
-- Add unit tests for the git wrapper functions by mocking `exec.Command` in a wrapper.
-- Add integration tests that run on CI with a temporary folder and a local Git binary.
-- Add a proper configuration file / app settings to persist selected repo across runs.
-- Add an installer / packaging instructions for each OS.
+## Suggestions for Future Development
 
-Contributing
+- Add unit tests for Git wrapper functions (mock `exec.Command`).
+- Implement integration tests using temporary folders and local Git.
+- Persist selected repository across app restarts.
+- Create installers/packages for each OS.
+- Add support for Git configurations and credentials.
 
-Contributions are welcome. Please open an issue for discussion or submit a pull request.
+## Contributing
 
-License
+Contributions are welcome! Please:
 
+1. Fork the repository.
+2. Create a feature branch.
+3. Make your changes.
+4. Submit a pull request.
 
+For issues or discussions, open an issue on GitHub.
 
-Contact
+## License
 
-Author: project repository (see commit history). For questions, open an issue in the repository.
+This project is licensed under the MIT License. See [LICENSE](LICENSE) for details.
 
-Acknowledgements
+## Contact
 
-Built using the Fyne GUI toolkit (fyne.io/fyne/v2).
+- **Developer**: Aswanidev VS
+- **GitHub**: [https://github.com/Aswanidev-vs/GitScope](https://github.com/Aswanidev-vs/GitScope)
 
+Built with ❤️ using the [Fyne GUI toolkit](https://fyne.io/).
