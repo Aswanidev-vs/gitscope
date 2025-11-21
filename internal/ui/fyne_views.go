@@ -21,6 +21,11 @@ import (
 	"github.com/gitscope/utils"
 )
 
+var (
+	edit      bool
+	gitignore string
+)
+
 func RepositoryPage(w fyne.Window) fyne.CanvasObject {
 	output := widget.NewLabel("Current repo: " + state.RepoPath)
 
@@ -61,6 +66,8 @@ func dashBoardPage(w fyne.Window) fyne.CanvasObject {
 	output := widget.NewMultiLineEntry()
 
 	output.Resize(fyne.NewSize(500, 230))
+	output.SetPlaceHolder(`This area shows the output / responses for majority of the commands 
+that triggered by the buttons. You can also add your gitignore entries here..`)
 	output.Move(fyne.NewPos(0, 1))
 	clearBtn := widget.NewButton("Clear", func() {
 		output.SetText("") // Clears the content
@@ -119,7 +126,11 @@ func dashBoardPage(w fyne.Window) fyne.CanvasObject {
 	BranchRenameBtn := BranchRenameButton(w, output)
 	BranchRenameBtn.Resize(fyne.NewSize(100, 40))
 	BranchRenameBtn.Move(fyne.NewPos(220, 450))
-	return container.NewWithoutLayout(initBtn, stageBtn, commitBtn, statusBtn, pushBtn, logBtn, revertBtn, cloneBtn, Branchbtn, PullBtn, clearBtn, Reflogbtn, SwitchBranchBtn, BranchRenameBtn, output)
+
+	GitIgnoreBtn := GitIgnoreButton(state.RepoPath, output, w)
+	GitIgnoreBtn.Resize(fyne.NewSize(110, 40))
+	GitIgnoreBtn.Move(fyne.NewPos(510, 195))
+	return container.NewWithoutLayout(initBtn, stageBtn, commitBtn, statusBtn, pushBtn, logBtn, revertBtn, cloneBtn, Branchbtn, PullBtn, clearBtn, Reflogbtn, SwitchBranchBtn, BranchRenameBtn, GitIgnoreBtn, output)
 }
 func InitButton(output *widget.Entry) *widget.Button {
 	return widget.NewButton("Init", func() {
@@ -583,4 +594,38 @@ Branch`, func() {
 		}, w)
 	})
 
+}
+func GitIgnoreButton(repoPath string, output *widget.Entry, w fyne.Window) *widget.Button {
+
+	btn := widget.NewButton("gitignore(Edit)", nil)
+
+	btn.OnTapped = func() {
+		if repoPath == "" {
+			dialog.ShowError(errors.New("No repository selected"), w)
+			return
+		}
+		if edit {
+			err := os.WriteFile(gitignore, []byte(output.Text), 0644)
+			if err != nil {
+				dialog.ShowError(err, w)
+			} else {
+				dialog.ShowInformation("Saved", ".gitignore updated successfully", w)
+			}
+			edit = false
+			btn.SetText("gitignore(Edit)")
+			return
+		}
+
+		path, err := git.GitIgnore(repoPath, output, w)
+		if err != nil {
+			dialog.ShowError(err, w)
+			return
+		}
+
+		edit = true
+		gitignore = path
+		btn.SetText(".gitignore (Save)") // clear indication
+	}
+
+	return btn
 }

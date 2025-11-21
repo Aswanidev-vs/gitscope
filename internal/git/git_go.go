@@ -5,9 +5,13 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"syscall"
 
+	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/dialog"
+	"fyne.io/fyne/v2/widget"
 	"github.com/gitscope/internal/state"
 )
 
@@ -310,4 +314,24 @@ func BranchRename(oldname, newname string) (string, error) {
 		return string(out), fmt.Errorf("branch rename failed: %v\n%s", err, string(out))
 	}
 	return "Branch renamed from " + oldname + " to " + newname, nil
+}
+
+func GitIgnore(repoPath string, output *widget.Entry, w fyne.Window) (string, error) {
+	filePath := filepath.Join(repoPath, ".gitignore")
+
+	if _, err := os.Stat(filePath); os.IsNotExist(err) {
+		if err := os.WriteFile(filePath, []byte(output.Text), 0644); err != nil {
+			dialog.ShowError(err, w)
+			return "", err
+		}
+	}
+
+	content, err := os.ReadFile(filePath)
+	if err != nil {
+		dialog.ShowError(err, w)
+		return "", err
+	}
+
+	output.SetText(string(content))
+	return filePath, nil
 }
