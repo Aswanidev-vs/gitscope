@@ -127,7 +127,7 @@ that triggered by the buttons. You can also add your gitignore entries here..`)
 	BranchRenameBtn.Resize(fyne.NewSize(100, 40))
 	BranchRenameBtn.Move(fyne.NewPos(220, 450))
 
-	GitIgnoreBtn := GitIgnoreButton(state.RepoPath, output, w)
+	GitIgnoreBtn := GitIgnoreButton(output, w)
 	GitIgnoreBtn.Resize(fyne.NewSize(110, 40))
 	GitIgnoreBtn.Move(fyne.NewPos(510, 195))
 	return container.NewWithoutLayout(initBtn, stageBtn, commitBtn, statusBtn, pushBtn, logBtn, revertBtn, cloneBtn, Branchbtn, PullBtn, clearBtn, Reflogbtn, SwitchBranchBtn, BranchRenameBtn, GitIgnoreBtn, output)
@@ -595,12 +595,12 @@ Branch`, func() {
 	})
 
 }
-func GitIgnoreButton(repoPath string, output *widget.Entry, w fyne.Window) *widget.Button {
+func GitIgnoreButton(output *widget.Entry, w fyne.Window) *widget.Button {
 
 	btn := widget.NewButton("gitignore(Edit)", nil)
 
 	btn.OnTapped = func() {
-		if repoPath == "" {
+		if state.RepoPath == "" {
 			dialog.ShowError(errors.New("No repository selected"), w)
 			return
 		}
@@ -616,7 +616,7 @@ func GitIgnoreButton(repoPath string, output *widget.Entry, w fyne.Window) *widg
 			return
 		}
 
-		path, err := git.GitIgnore(repoPath, output, w)
+		path, err := git.GitIgnore(state.RepoPath, output, w)
 		if err != nil {
 			dialog.ShowError(err, w)
 			return
