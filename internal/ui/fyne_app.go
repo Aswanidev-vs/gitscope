@@ -87,16 +87,18 @@ func SideBar(w fyne.Window) (fyne.CanvasObject, fyne.CanvasObject) {
 	settingsbtn.SetToolTip("About")
 
 	// Documentation button
-	documentbtn = ttwidget.NewButtonWithIcon("", theme.DocumentIcon(), nil)
-	documentbtn.SetToolTip("Documentation")
-	documentbtn.OnTapped = func() {
+	documentPage := DocumentPage(w)
+	documentbtn = ttwidget.NewButtonWithIcon("", theme.DocumentIcon(), func() {
 		SetActive(documentbtn, []*ttwidget.Button{Addbtn, Repobtn, settingsbtn})
-		documentPage := widget.NewLabel("Documentation page") // Placeholder
-		w.SetContent(fynetooltip.AddWindowToolTipLayer(
-			container.NewBorder(nil, nil, sidebar, nil, container.NewCenter(documentPage)),
-			w.Canvas(),
-		))
-	}
+
+		w.SetContent(
+			fynetooltip.AddWindowToolTipLayer(
+				container.NewBorder(nil, nil, sidebar, nil, documentPage),
+				w.Canvas(),
+			),
+		)
+	})
+	documentbtn.SetToolTip("Documentation")
 
 	// Sidebar layout: Repo first
 	sidebar = container.NewVBox(

@@ -17,6 +17,7 @@ import (
 	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/widget"
 
+	"github.com/gitscope/internal/doc"
 	"github.com/gitscope/internal/git"
 	"github.com/gitscope/internal/state"
 )
@@ -298,4 +299,32 @@ func IsInitialized(repoPath string) bool {
 		return false
 	}
 	return info.IsDir()
+}
+func Decision(title string) fyne.CanvasObject {
+	switch title {
+	case "Init":
+		return doc.Init()
+	case "Stage":
+		return doc.Stage()
+	case "Status":
+		return doc.Status()
+	case "Commit":
+		return doc.Commit()
+	case "Push":
+		return doc.Push()
+	case "Log":
+		return doc.Log()
+	case "Revert":
+		return doc.Revert()
+	case "Clone":
+		return doc.Clone()
+	case "Branch":
+		return doc.Branch()
+	case "Pull":
+		return doc.Pull()
+	case "Reflog":
+		return doc.Reflog()
+	default:
+		return widget.NewLabel("Unknown Document")
+	}
 }

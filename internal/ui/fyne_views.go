@@ -13,6 +13,8 @@ import (
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/dialog"
+	"fyne.io/fyne/v2/layout"
+	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	core "github.com/gitscope/internal/core"
 	"github.com/gitscope/internal/git"
@@ -631,4 +633,50 @@ func GitIgnoreButton(output *widget.Entry, w fyne.Window) *widget.Button {
 	}
 
 	return btn
+}
+func DocumentPage(w fyne.Window) fyne.CanvasObject {
+
+	items := []string{"Init", "Stage", "Status", "Commit", "Push", "Log", "Revert", "Clone", "Branch", "Pull", "Reflog"}
+
+	masterContainer := container.NewStack()
+
+	listContainer := container.New(layout.NewGridWrapLayout(fyne.NewSize(420, 60)))
+
+	var listView fyne.CanvasObject
+
+	for _, item := range items {
+		name := item
+		btn := widget.NewButton(name, func() {
+
+			docPage := helpers.Decision(name)
+
+			backBtn := widget.NewButtonWithIcon("Back", theme.NavigateBackIcon(), func() {
+				masterContainer.Objects = []fyne.CanvasObject{listView}
+				masterContainer.Refresh()
+			})
+
+			detailPage := container.NewBorder(
+				container.NewHBox(backBtn),
+				nil, nil, nil,
+				container.NewVScroll(docPage),
+			)
+
+			masterContainer.Objects = []fyne.CanvasObject{detailPage}
+			masterContainer.Refresh()
+		})
+
+		listContainer.Add(btn)
+	}
+	listScroll := container.NewVScroll(listContainer)
+
+	listView = container.NewBorder(
+		widget.NewLabelWithStyle("Documentation", fyne.TextAlignCenter, fyne.TextStyle{Bold: true}),
+		nil, nil, nil,
+		listScroll,
+	)
+
+	masterContainer.Add(listView)
+
+	return masterContainer
+
 }
