@@ -324,6 +324,8 @@ func Decision(title string) fyne.CanvasObject {
 		return doc.Pull()
 	case "Reflog":
 		return doc.Reflog()
+	case "GitIgnore":
+		return doc.GitIgnore()
 	default:
 		return widget.NewLabel("Unknown Document")
 	}

@@ -352,3 +352,51 @@ If you messed up a rebase or deleted a commit, reflog helps you find the old com
 	content := FormatSection("Git Reflog", body)
 	return widget.NewRichText(content...)
 }
+func GitIgnore() fyne.CanvasObject {
+	body := `A .gitignore file tells Git which files and folders it should NOT track.
+
+Simple definition:
+.gitignore is a list of files Git must ignore.
+
+Why .gitignore is important:
+• keeps unwanted files out of commits  
+• prevents IDE, OS, and build files from polluting the repo  
+• protects sensitive files from being pushed  
+• keeps the repo clean and lightweight  
+
+Common examples:
+
+Ignore OS files:
+*.DS_Store
+Thumbs.db
+
+Ignore build folders:
+build/
+dist/
+bin/
+
+Ignore logs and temporary files:
+*.log
+*.tmp
+
+Ignore environment files:
+.env
+config.local.json
+
+Ignore IDE settings:
+.vscode/
+.idea/
+
+Ignore all files of a type:
+*.exe
+*.dll
+*.zip
+
+Important note:
+If a file is already tracked, .gitignore will NOT untrack it.
+Use:
+git rm --cached <file>`
+
+	content := FormatSection(".gitignore", body)
+	return widget.NewRichText(content...)
+}
