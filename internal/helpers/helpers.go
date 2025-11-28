@@ -25,6 +25,7 @@ import (
 func RullshellCommand(line string) *exec.Cmd {
 	if runtime.GOOS == "windows" {
 		return exec.Command("cmd", "/C", line)
+
 	}
 	return exec.Command("sh", "-c", line)
 }
@@ -84,6 +85,7 @@ func NewRepoCmd(w fyne.Window, repoPath string, cmdText string) fyne.CanvasObjec
 			}
 
 			cmd := exec.Command("cmd", "/C", line)
+			cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
 			cmd.Dir = repoPath
 
 			output, err := cmd.CombinedOutput()
