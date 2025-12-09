@@ -400,3 +400,84 @@ git rm --cached <file>`
 	content := FormatSection(".gitignore", body)
 	return widget.NewRichText(content...)
 }
+func Remote() fyne.CanvasObject {
+	body := `
+git remote -v shows all the remote repository URLs that your local project is connected to.
+
+remote → means remote repository
+
+-v → means "verbose" (show the URLs)
+
+🟦 Simple Real Example
+
+Suppose you cloned a repo:
+
+git clone https://github.com/someone/project.git
+
+
+Now run:
+
+git remote -v
+
+
+You will see:
+
+origin  https://github.com/someone/project.git (fetch)
+origin  https://github.com/someone/project.git (push)
+
+This means:
+
+Your local project is linked to one remote named origin
+
+Both fetching and pushing use the same URL
+
+🟩 Example With Multiple Remotes
+
+If you add another remote:
+
+git remote add backup https://github.com/you/backup-project.git
+
+
+Now run:
+
+git remote -v
+
+
+Output becomes:
+
+origin  https://github.com/someone/project.git (fetch)
+origin  https://github.com/someone/project.git (push)
+backup  https://github.com/you/backup-project.git (fetch)
+backup  https://github.com/you/backup-project.git (push)
+
+Meaning:
+
+origin → main repo
+
+backup → second repo
+
+🟥 Why git remote -v matters
+
+It helps you check:
+
+✔ Which repo you are going to push to
+✔ Which repo you are going to pull from
+✔ If you cloned a repo and want to change the remote
+
+🟨 Quick Use Case: Changing Remote
+
+If this shows:
+
+origin  https://github.com/someone/project.git (fetch)
+
+
+but you want to push to your own repo:
+
+git remote remove origin
+git remote add origin https://github.com/you/myrepo.git
+
+
+	`
+	content := FormatSection("Remote", body)
+	return widget.NewRichText(content...)
+}

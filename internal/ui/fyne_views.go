@@ -141,7 +141,11 @@ folder/          → Ignore entire folder
 	GitIgnoreBtn := GitIgnoreButton(output, w)
 	GitIgnoreBtn.Resize(fyne.NewSize(110, 40))
 	GitIgnoreBtn.Move(fyne.NewPos(510, 195))
-	return container.NewWithoutLayout(initBtn, stageBtn, commitBtn, statusBtn, pushBtn, logBtn, revertBtn, cloneBtn, Branchbtn, PullBtn, clearBtn, Reflogbtn, SwitchBranchBtn, BranchRenameBtn, GitIgnoreBtn, output)
+
+	GitRemotebtn := RemoteButton(w, output)
+	GitRemotebtn.Resize(fyne.NewSize(100, 40))
+	GitRemotebtn.Move(fyne.NewPos(329, 450))
+	return container.NewWithoutLayout(initBtn, stageBtn, commitBtn, statusBtn, pushBtn, logBtn, revertBtn, cloneBtn, Branchbtn, PullBtn, clearBtn, Reflogbtn, SwitchBranchBtn, BranchRenameBtn, GitIgnoreBtn, GitRemotebtn, output)
 }
 func InitButton(output *widget.Entry) *widget.Button {
 	return widget.NewButton("Init", func() {
@@ -383,13 +387,13 @@ func CloneButton(w fyne.Window) *widget.Button {
 				return
 			}
 
-			// out, err := git.Clone(state.RepoPath, cloneurl)
-			// if err != nil {
-			// 	dialog.ShowError(fmt.Errorf("Clone failed: %w", err), w)
-			// 	return
-			// }
+			out, err := git.Clone(state.RepoPath, cloneurl)
+			if err != nil {
+				dialog.ShowError(fmt.Errorf("Clone failed: %w", err), w)
+				return
+			}
 
-			// dialog.ShowInformation("Clone Successful", out, w)
+			dialog.ShowInformation("Clone Successful", out, w)
 		}, w)
 	})
 }
@@ -572,8 +576,8 @@ Branch`, func() {
 		newInput.SetPlaceHolder("New branch name")
 
 		form := []*widget.FormItem{
-			{Text: "Old Name", Widget: oldInput},
-			{Text: "New Name", Widget: newInput},
+			{Widget: oldInput},
+			{Widget: newInput},
 		}
 		repo := state.RepoPath
 		checkdir, err := os.Stat(repo)
@@ -636,7 +640,7 @@ func GitIgnoreButton(output *widget.Entry, w fyne.Window) *widget.Button {
 }
 func DocumentPage(w fyne.Window) fyne.CanvasObject {
 
-	items := []string{"Init", "Stage", "Status", "Commit", "Push", "Log", "Revert", "Clone", "Branch", "Pull", "Reflog", "GitIgnore"}
+	items := []string{"Init", "Stage", "Status", "Commit", "Push", "Log", "Revert", "Clone", "Branch", "Pull", "Reflog", "GitIgnore", "Remote"}
 
 	masterContainer := container.NewStack()
 
@@ -679,4 +683,93 @@ func DocumentPage(w fyne.Window) fyne.CanvasObject {
 
 	return masterContainer
 
+}
+func RemoteButton(w fyne.Window, output *widget.Entry) fyne.CanvasObject {
+	actions := []string{"list", "remove", "add"}
+	actionSelect := widget.NewSelect(actions, func(value string) {})
+
+	runBtn := widget.NewButton("Remote", func() {
+
+		if state.RepoPath == "" {
+			dialog.ShowInformation("repository", "invalid path select a repository", w)
+			return
+		}
+		switch actionSelect.Selected {
+		case "list":
+			result, err := git.GitRemote("list", " ")
+			if err != nil {
+				output.SetText(fmt.Sprintf("Error: %v\n%s", err, result))
+			} else {
+				output.SetText(result)
+			}
+
+		case "remove":
+			// remoteEntry := widget.NewEntry()
+			// remoteEntry.SetPlaceHolder("Remote name ")
+			// remoteurl := widget.NewEntry()
+			// remoteurl.SetPlaceHolder("Remote url")
+			// formItems := []*widget.FormItem{
+			// 	widget.NewFormItem("", remoteEntry),
+			// }
+
+			// dialog.ShowForm("Remove Remote", "Remove", "Cancel", formItems, func(ok bool) {
+			// 	if ok {
+			// 		result, err := git.GitRemote("remove", "", remoteEntry.Text)
+			// 		if err != nil {
+			// 			output.SetText(fmt.Sprintf("Error: %v\n%s", err, result))
+			// 		} else {
+			// 			output.SetText(result)
+			// 		}
+			// 	}
+			// }, w)
+			cmd := exec.Command("git", "-C", state.RepoPath, "remote", "remove", "origin")
+			out, err := cmd.CombinedOutput()
+			msg := string(out)
+
+			if err != nil { 
+				lower := strings.ToLower(msg)
+
+				// remote does not exist
+				if strings.Contains(lower, "no such remote") {
+					output.SetText("No previous origin found ")
+					// no return needed, gracefully continue
+				} else {
+					// real error
+					output.SetText("Warning: Could not remove old origin:")
+					output.SetText(msg)
+				}
+			} else {
+				output.SetText("Old origin removed successfully")
+			}
+
+			cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
+		case "add":
+			urlEntry := widget.NewEntry()
+			urlEntry.SetPlaceHolder("Remote URL")
+
+			formItems := []*widget.FormItem{
+
+				widget.NewFormItem("", urlEntry),
+			}
+
+			dialog.ShowForm("Add Remote", "Add", "Cancel", formItems, func(ok bool) {
+				if ok {
+					result, err := git.GitRemote("add", urlEntry.Text)
+					if err != nil {
+						output.SetText(fmt.Sprintf("Error: %v\n%s", err, result))
+					} else {
+						output.SetText(result)
+					}
+				}
+			}, w)
+
+		default:
+			output.SetText("No action selected")
+		}
+	})
+
+	return container.NewVBox(
+		runBtn,
+		actionSelect,
+	)
 }

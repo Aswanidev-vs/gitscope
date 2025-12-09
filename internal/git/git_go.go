@@ -335,3 +335,77 @@ func GitIgnore(repoPath string, output *widget.Entry, w fyne.Window) (string, er
 	output.SetText(string(content))
 	return filePath, nil
 }
+
+//	func GitRemote(repo string) (string, error) {
+//		cmd := exec.Command("git", "-C", repo, "remote", "-v")
+//		cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
+//		out, err := cmd.CombinedOutput()
+//		if err != nil {
+//			return string(out), fmt.Errorf("git remote failed: %v\n%s", err, string(out))
+//		}
+//		return "failed to list git remotes for repo,select a repository", err
+//	}
+//
+// GitRemote performs git remote operations (list, add, remove) in the specified repository directory.
+func GitRemote(action string, args string) (string, error) {
+	repo := state.RepoPath
+	var cmd *exec.Cmd
+	Rmv := func(remoteName string) error {
+		name := strings.TrimSpace(remoteName)
+		if name == "" {
+			return fmt.Errorf("missing remote name to remove")
+		}
+		// Assign to the outer cmd variable
+		cmd = exec.Command("git", "-C", repo, "remote", "remove", name)
+		return nil
+	}
+	switch action {
+
+	case "list":
+		cmd = exec.Command("git", "-C", repo, "remote", "-v")
+
+	case "remove":
+		if err := Rmv(args); err != nil {
+			return "", err
+		}
+	case "add":
+
+		cleaned := strings.TrimSpace(args)
+
+		prefixes := []string{
+			"git remote add ",
+			"remote add ",
+			"add ",
+		}
+
+		for _, p := range prefixes {
+			if after, ok := strings.CutPrefix(cleaned, p); ok {
+				cleaned = after
+				break
+			}
+		}
+
+		parts := strings.Fields(cleaned)
+		if len(parts) < 2 {
+			return "", fmt.Errorf("usage: add <name> <url>")
+		}
+
+		name := parts[0]
+		url := parts[1]
+		if name == "origin" {
+			_ = Rmv("origin")
+		}
+		cmd = exec.Command("git", "-C", repo, "remote", "add", name, url)
+
+	default:
+		return "", fmt.Errorf("unknown action: %s", action)
+	}
+
+	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		return string(output), fmt.Errorf("git remote %s failed: %w", action, err)
+	}
+
+	return string(output), nil
+}
