@@ -87,7 +87,8 @@ func NewRepoCmd(w fyne.Window, repoPath string, cmdText string) fyne.CanvasObjec
 			cmd := exec.Command("cmd", "/C", line)
 			cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
 			cmd.Dir = repoPath
-
+			cmd.Stdout = nil
+			cmd.Stderr = nil
 			output, err := cmd.CombinedOutput()
 			outStr := strings.TrimSpace(string(output))
 
@@ -259,6 +260,7 @@ func ExistingRepoCmd(w fyne.Window, repoPath string, cmdText string) {
 			}
 
 			cmd := exec.Command(parts[0], parts[1:]...)
+			cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
 			cmd.Dir = repoPath
 			out, err := cmd.CombinedOutput()
 			fmt.Println("Running:", line)
