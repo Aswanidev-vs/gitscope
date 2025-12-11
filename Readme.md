@@ -1,3 +1,4 @@
+<img width="500" height="500" alt="image" src="https://github.com/user-attachments/assets/e50be4a5-bf6d-434d-b18b-145cd6fd16cc" />
 
 
 # **GitScope**
