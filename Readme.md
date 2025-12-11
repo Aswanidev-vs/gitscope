@@ -1,4 +1,6 @@
-<img width="500" height="500" alt="image" src="https://github.com/user-attachments/assets/e50be4a5-bf6d-434d-b18b-145cd6fd16cc" />
+<p align="center">
+  <img width="430" height="430" src="https://github.com/user-attachments/assets/992700cd-57ce-4866-83c0-8d71cf27bbec" />
+</p>
 
 
 # **GitScope**
