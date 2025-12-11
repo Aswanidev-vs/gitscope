@@ -1,136 +1,179 @@
-# GitScope
 
-GitScope is a modern, lightweight, and visually intuitive desktop GUI client for Git, built with Go and the Fyne toolkit. It simplifies essential version control operations, making Git more accessible for beginners and experienced developers alike. GitScope provides a user-friendly interface to perform common Git tasks without needing the command line, while still leveraging Git's powerful features under the hood.
 
-## Key Features
+# **GitScope**
 
-- **Repository Management**: Select or create local repositories using a folder picker.
-- **Initialization & Status**: Initialize new Git repositories and view repository status.
-- **Staging & Committing**: Stage changes and create commits with custom messages.
-- **Branching**: Create, delete, switch, and rename branches.
-- **Pushing & Pulling**: Push commits to remote repositories and pull changes with branch selection.
-- **Cloning**: Clone repositories into empty folders.
-- **History & Logs**: View commit logs, reflog, and revert commits by hash.
-- **GitIgnore Editing**: Edit or create `.gitignore` files directly in the app.
-- **Custom Commands**: Run user-provided Git command sequences for advanced operations.
-- **Cross-Platform**: Works on Windows, macOS, and Linux using Fyne's GUI toolkit.
+GitScope is a lightweight and intuitive Git desktop client built with **Go** and the **Fyne** GUI toolkit. It provides a clean interface for performing essential Git operations without needing the command line, while still using Git’s full power internally.
 
-## Prerequisites
+GitScope is ideal for developers who want a simple, cross-platform Git companion for everyday tasks such as committing, branching, pushing, pulling, and browsing repository history.
 
-- **Go**: Version 1.25.3 or later (module requires go 1.25.3).
-- **Git**: Installed and available in your system's PATH.
-- **Fyne Dependencies**: Automatically pulled via `go mod` (optional manual setup for development).
+## **Features**
 
-## Installation
+* **Repository Setup**
+  Select, create, or initialize repositories using a simple folder picker.
 
-### Option 1: Build from Source (Recommended for Development)
+* **Initialization and Status**
+  Initialize new Git repositories and view repository status directly in the UI.
 
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/Aswanidev-vs/GitScope.git
-   cd GitScope
-   ```
+* **Staging and Committing**
+  Stage changes and create commits with a custom message.
 
-2. Install dependencies:
-   ```bash
-   go mod tidy
-   ```
+* **Branch Management**
+  Create, delete, switch, and rename branches.
 
-3. Run the application:
-   ```bash
-   go run main.go
-   ```
+* **Push and Pull**
+  Push commits to remotes and pull changes with branch selection.
 
-### Option 2: Build Executable
+* **Clone Repositories**
+  Clone any remote repository into an empty folder.
 
-1. Build the binary:
-   ```bash
-   go build -o gitscope main.go
-   ```
+* **Logs and History**
+  View commit history, reflog entries, and revert specific commits.
 
-2. Run the executable:
-   - On Windows: `gitscope.exe`
-   - On macOS/Linux: `./gitscope`
+* **GitIgnore Editor**
+  Create or edit the `.gitignore` file inside the app.
 
-The built binary can be executed directly on supported platforms.
+* **Custom Git Commands**
+  Run user-defined Git command sequences for advanced workflows.
 
-## Usage
+* **Cross-Platform**
+  Runs on Windows, macOS, and Linux using Fyne’s cross-platform GUI engine.
 
-1. **Launch the App**: Run `go run main.go` or the built executable. The app checks for Git availability on startup.
+## **Prerequisites**
 
-2. **Repository Setup**:
-   - Use "Select Repository" to choose an existing local folder.
-   - Use "Create New Repository" to paste commands for initializing a new repo (e.g., GitHub creation commands).
-   - Use "Existing Repository" for additional setup options.
+* **Go**: Version 1.25.3 or later
+* **Git**: Installed and accessible from PATH
+* **Fyne**: Pulled automatically through Go modules; additional setup may be required for some platforms
 
-3. **Dashboard Operations**:
-   - **Init**: Initialize a Git repository in the selected folder.
-   - **Status**: View the current repository status.
-   - **Stage**: Add all changes to the staging area.
-   - **Commit**: Create a commit with a custom message.
-   - **Push**: Push commits to the remote repository (select branch).
-   - **Pull**: Pull changes from the remote (option to reset last commit).
-   - **Log**: View commit history in oneline format.
-   - **Reflog**: View reference logs.
-   - **Clone**: Clone a repository into an empty folder (provide GitHub URL).
-   - **Branch**: Create or delete branches.
-   - **Switch Branch**: Switch to a different branch.
-   - **Rename Branch**: Rename an existing branch.
-   - **Revert**: Revert a commit by hash.
-   - **GitIgnore (Edit)**: Edit the `.gitignore` file directly.
+---
 
-4. **Settings**: View app information, version, and links.
+## **Installation**
 
-**Note**: The app executes Git commands via `os/exec`. Ensure Git is installed and in PATH. For security, avoid running untrusted command blocks.
+### **Build from Source**
 
-## Project Layout
+```bash
+git clone https://github.com/Aswanidev-vs/GitScope.git
+cd GitScope
+go mod tidy
+go run main.go
+```
 
-- `main.go` — Application entry point; initializes the UI.
-- `go.mod` & `go.sum` — Go module and dependency declarations.
-- `assets/` — Icons and static assets (app icon for the GUI).
-- `internal/`
-  - `core/manager.go` — GUI components for repository selection and forms.
-  - `git/git_go.go` — Thin wrapper functions executing Git commands (init, status, commit, stage, push, clone, branch, pull, revert, log, reflog, etc.).
-  - `helpers/` — Utility functions for shell commands, branch selectors, and GUI helpers.
-  - `state/` — Global runtime state (e.g., current repository path).
-  - `ui/` — Fyne app and views (`fyne_app.go`, `fyne_views.go`) implementing the GUI.
-- `utils/` — Additional UI helpers (e.g., branch creation dialogs).
-- `Readme.md` — This file.
+### **Build Executable**
 
-## Developer Notes
+```bash
+go build -o gitscope main.go
+```
 
-- **Git Execution**: Commands are run using `exec.Command` with `git` in the repository directory.
-- **Global State**: `internal/state.RepoPath` stores the selected folder; handle changes carefully.
-- **Cross-Platform Shell**: Uses `helpers.RunShellCommand` for portability, with some Windows-specific paths.
-- **Dependencies**: Relies on Fyne (fyne.io/fyne/v2) and fyne-tooltip for UI.
-- **Testing**: Consider unit tests for Git wrappers and integration tests with temporary repos.
+Run with:
 
-## Suggestions for Future Development
+* Windows: `gitscope.exe`
+* macOS/Linux: `./gitscope`
 
-- Add unit tests for Git wrapper functions (mock `exec.Command`).
-- Implement integration tests using temporary folders and local Git.
-- Persist selected repository across app restarts.
-- Create installers/packages for each OS.
-- Add support for Git configurations and credentials.
+---
 
-## Contributing
+## **Usage**
 
-Contributions are welcome! Please:
+1. **Start the App**
+   Launch using `go run main.go` or the built executable.
 
-1. Fork the repository.
-2. Create a feature branch.
-3. Make your changes.
-4. Submit a pull request.
+2. **Select a Repository**
 
-For issues or discussions, open an issue on GitHub.
+   * Pick an existing folder
+   * Or create a new folder and initialize it using the "Init" function
 
-## License
+3. **Perform Git Operations**
+   Use the dashboard to run all supported operations:
 
-This project is licensed under the MIT License. See [LICENSE](LICENSE) for details.
+   * Init
+   * Status
+   * Stage All
+   * Commit
+   * Branch Create/Delete
+   * Branch Switch
+   * Branch Rename
+   * Push
+   * Pull
+   * Clone
+   * Log
+   * Reflog
+   * Revert commit by hash
+   * Edit `.gitignore`
+   * Run custom Git commands
 
-## Contact
+The app uses `os/exec` to run Git commands. Ensure Git is installed and on your PATH.
 
-- **Developer**: Aswanidev VS
-- **GitHub**: [https://github.com/Aswanidev-vs/GitScope](https://github.com/Aswanidev-vs/GitScope)
+---
 
-Built with ❤️ using the [Fyne GUI toolkit](https://fyne.io/).
+## **Project Structure**
+
+```
+GitScope/
+│
+├── main.go                 # Entry point
+├── assets/                 # Icons and static assets
+├── go.mod / go.sum         # Module files
+│
+├── internal/
+│   ├── core/               # GUI forms, manager logic
+│   │   └── manager.go
+│   ├── git/                # Git integration and command wrappers
+│   │   └── git_go.go
+│   ├── helpers/            # Shell, branch selectors, utility helpers
+│   ├── state/              # Runtime repo state
+│   └── ui/                 # Fyne UI implementation
+│       ├── fyne_app.go
+│       └── fyne_views.go
+│
+└── utils/                  # Dialogs and UI helpers
+```
+
+---
+
+## **Developer Notes**
+
+* Git commands are executed using `exec.Command` within the selected repository directory.
+* Global state is stored in `internal/state`, primarily `RepoPath`.
+* Commands are designed to be cross-platform, with shell helpers ensuring portability.
+* Future tests should include:
+
+  * Unit tests for Git command wrappers
+  * Integration tests using temporary Git repositories
+
+---
+
+## **Planned Improvements**
+
+* Persistent repository history across app restarts
+* GUI improvements and theme customization
+* Simple merge and conflict-viewing support
+* Installer packages for each OS
+* Basic Git configuration editor (name, email, remotes)
+* Automated unit and integration tests
+
+---
+
+## **Contributing**
+
+Contributions are welcome.
+
+1. Fork the repository
+2. Create a feature branch
+3. Commit your changes
+4. Open a pull request
+
+For bugs or feature requests, open an issue with details and reproduction steps.
+
+---
+
+## **License**
+
+This project is licensed under the **MIT License**.
+See the **LICENSE** file for complete details.
+
+---
+
+## **Contact**
+
+**Developer:** Aswanidev VS
+**GitHub:** [https://github.com/Aswanidev-vs/GitScope](https://github.com/Aswanidev-vs/GitScope)
+
+Built with love using the Fyne GUI toolkit.
