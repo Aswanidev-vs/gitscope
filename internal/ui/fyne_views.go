@@ -353,15 +353,15 @@ func CloneButton(w fyne.Window) *widget.Button {
 			return
 		}
 
-		files, err := os.ReadDir(state.RepoPath)
+		_, err := os.ReadDir(state.RepoPath)
 		if err != nil {
 			dialog.ShowError(fmt.Errorf("Unable to read target folder: %w", err), w)
 			return
 		}
-		if len(files) > 0 {
-			dialog.ShowInformation("Folder Not Empty", "Please choose an empty folder to clone into.", w)
-			return
-		}
+		// if len(files) > 0 {
+		// 	dialog.ShowInformation("Folder Not Empty", "Please choose an empty folder to clone into.", w)
+		// 	return
+		// }
 
 		// Clone URL input
 		input := widget.NewEntry()
@@ -726,7 +726,7 @@ func RemoteButton(w fyne.Window, output *widget.Entry) fyne.CanvasObject {
 			out, err := cmd.CombinedOutput()
 			msg := string(out)
 
-			if err != nil { 
+			if err != nil {
 				lower := strings.ToLower(msg)
 
 				// remote does not exist
