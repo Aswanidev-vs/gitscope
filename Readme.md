@@ -179,4 +179,3 @@ See the **LICENSE** file for complete details.
 **Developer:** Aswanidev VS
 **GitHub:** [https://github.com/Aswanidev-vs/GitScope](https://github.com/Aswanidev-vs/GitScope)
 
-Built with love using the Fyne GUI toolkit.
