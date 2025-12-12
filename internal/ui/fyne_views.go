@@ -360,11 +360,6 @@ func CloneButton(w fyne.Window) *widget.Button {
 			dialog.ShowError(fmt.Errorf("Unable to read target folder: %w", err), w)
 			return
 		}
-		// if len(files) > 0 {
-		// 	dialog.ShowInformation("Folder Not Empty", "Please choose an empty folder to clone into.", w)
-		// 	return
-		// }
-
 		// Clone URL input
 		input := widget.NewEntry()
 		input.SetPlaceHolder("https://github.com/yourname/repositoryname.git")
