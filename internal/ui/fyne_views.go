@@ -489,7 +489,10 @@ func PullButton(w fyne.Window) fyne.CanvasObject {
 				if reset {
 					msg = "Last commit reset and pull completed successfully."
 				}
-				dialog.ShowInformation("Success", msg, w)
+				// dialog.ShowInformation("Success", msg, w)
+				fyne.Do(func() {
+					dialog.ShowInformation("Success", msg, w)
+				})
 			}()
 		}, w)
 	})
