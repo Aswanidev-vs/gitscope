@@ -22,7 +22,6 @@ func main() {
 		tempWindow.ShowAndRun()
 		return
 	}
-
 	ui.App()
 }
 
