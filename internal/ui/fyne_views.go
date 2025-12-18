@@ -459,7 +459,7 @@ func PullButton(w fyne.Window) fyne.CanvasObject {
 
 				if reset {
 
-					sha, err := helpers.GetPreviousCommit(state.RepoPath)
+					sha, err := helpers.GetPreviousCommit()
 					if err != nil {
 						dialog.ShowError(err, w)
 						return

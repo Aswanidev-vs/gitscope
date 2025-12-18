@@ -282,8 +282,8 @@ func ExistingRepoCmd(w fyne.Window, repoPath string, cmdText string) {
 		}
 	}()
 }
-func GetPreviousCommit(repoPath string) (string, error) {
-	repo := repoPath
+func GetPreviousCommit() (string, error) {
+	repo := state.RepoPath
 	checkdir, err := os.Stat(repo)
 	if err != nil || !checkdir.IsDir() {
 		return "", errors.New("invalid directory path")
