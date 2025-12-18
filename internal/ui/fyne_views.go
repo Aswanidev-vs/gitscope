@@ -472,6 +472,7 @@ func PullButton(w fyne.Window) fyne.CanvasObject {
 						return
 					}
 
+					git.Stage()
 				}
 
 				output, err := git.Pull(state.RepoPath, branch)
@@ -479,7 +480,6 @@ func PullButton(w fyne.Window) fyne.CanvasObject {
 					dialog.ShowError(fmt.Errorf("Pull failed:\n%v\n\n%s", err, output), w)
 					return
 				}
-
 				msg := "Pull completed successfully."
 				if reset {
 					msg = "Last commit reset and pull completed successfully."
