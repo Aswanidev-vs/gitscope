@@ -177,5 +177,5 @@ See the **LICENSE** file for complete details.
 ## **Contact**
 
 **Developer:** Aswanidev VS
-**GitHub:** [https://github.com/Aswanidev-vs/GitScope](https://github.com/Aswanidev-vs/GitScope)
+**GitHub:** [https://github.com/Aswanidev-vs/GitScope](https://github.com/Aswanidev-vs/)
 
