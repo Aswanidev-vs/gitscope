@@ -208,21 +208,28 @@ func Revert(commitHash string) (string, error) {
 
 	return string(output), err
 }
-func Clone(repoPath, CloneUrl string) (string, error) {
-	checkdir, err := os.Stat(repoPath)
-	if err != nil || !checkdir.IsDir() {
-		return "", errors.New("invalid directory path")
+func Clone(repoPath, cloneURL string) (string, error) {
+	parentDir := filepath.Dir(repoPath)
+
+	// Ensure parent directory exists
+	if info, err := os.Stat(parentDir); err != nil || !info.IsDir() {
+		return "", errors.New("invalid parent directory path")
 	}
-	cmd := exec.Command("git", "clone", CloneUrl, repoPath)
+
+	// Prepare git clone command
+	cmd := exec.Command("git", "-C", repoPath, "clone", cloneURL)
+
+	// Hide window on Windows
 	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
-	out, err := cmd.CombinedOutput()
 
+	out, err := cmd.CombinedOutput()
 	if err != nil {
-		return string(out), fmt.Errorf("clone failed:%v\n%s", err, string(out))
+		return string(out), fmt.Errorf("clone failed: %v\n%s", err, string(out))
 	}
 
-	return "successfully cloned the Repo", nil
+	return "successfully cloned the repo", nil
 }
+
 func CreateBranch(repoPath, branchname string) (string, error) {
 
 	repo := repoPath
