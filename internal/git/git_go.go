@@ -416,3 +416,15 @@ func GitRemote(action string, args string) (string, error) {
 
 	return string(output), nil
 }
+
+func Diff() (string, error) {
+	repo := state.RepoPath
+	checkdir, err := os.Stat(repo)
+	if err != nil || !checkdir.IsDir() {
+		return "", errors.New("invalid directory path")
+	}
+	cmd := exec.Command("git", "-C", repo, "diff")
+	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
+	out, err := cmd.Output()
+	return string(out), err
+}

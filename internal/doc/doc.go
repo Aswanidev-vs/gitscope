@@ -481,3 +481,155 @@ git remote add origin https://github.com/you/myrepo.git
 	content := FormatSection("Remote", body)
 	return widget.NewRichText(content...)
 }
+func Diff() fyne.CanvasObject {
+	body := `
+git diff shows the difference between changes in your files.  
+It helps you see what you changed before committing.
+
+diff → difference between versions of files
+
+🟦 Simple Meaning
+
+Think of git diff as:
+
+"What exactly did I change?"
+
+It compares:
+• Old version vs new version
+• Saved files vs last commit
+• Staged vs unstaged changes
+
+🟦 Simple Real Example
+
+Suppose you have a file app.go:
+
+Before:
+fmt.Println("Hello")
+
+You change it to:
+fmt.Println("Hello World")
+
+Now run:
+
+git diff
+
+Output:
+- fmt.Println("Hello")
++ fmt.Println("Hello World")
+
+Meaning:
+- line was removed
++ line was added
+
+🟩 Understanding Symbols
+
++  added line  
+-  removed line  
+
+No symbol means unchanged context.
+
+🟦 git diff (most common)
+
+Command:
+git diff
+
+Shows:
+Changes that are NOT staged yet
+
+Use case:
+You edited files but did not run git add
+
+🟩 Example
+
+You edit main.go but do not add it.
+
+git diff
+
+Shows what you changed in main.go.
+
+🟦 git diff --staged (or --cached)
+
+Command:
+git diff --staged
+
+Shows:
+Changes that ARE staged and ready to commit
+
+Use case:
+You already ran git add and want to review before commit.
+
+🟩 Example
+
+git add main.go
+git diff --staged
+
+Shows what will go into the next commit.
+
+🟦 git diff HEAD
+
+Command:
+git diff HEAD
+
+Shows:
+All changes compared to last commit
+Includes staged + unstaged changes.
+
+🟦 git diff filename
+
+Command:
+git diff main.go
+
+Shows:
+Differences only for that file.
+
+Helpful when:
+You changed many files but want to check one.
+
+🟦 git diff branch1 branch2
+
+Command:
+git diff main feature-login
+
+Shows:
+Difference between two branches.
+
+Use case:
+Before merging a feature branch.
+
+🟦 git diff --stat
+
+Command:
+git diff --stat
+
+Shows:
+Summary instead of full code.
+
+Example output:
+ main.go | 5 +++--
+ utils.go | 2 ++
+
+Meaning:
+• main.go changed 5 lines
+• utils.go changed 2 lines
+
+🟥 Why git diff is important
+
+It helps you:
+✔ Avoid committing mistakes
+✔ Review changes clearly
+✔ Understand what broke your code
+✔ Learn what exactly you modified
+
+🟨 Best Beginner Workflow
+
+1. Edit files
+2. Run git diff
+3. Run git add .
+4. Run git diff --staged
+5. git commit -m "message"
+
+This keeps your commits clean and safe.
+`
+	content := FormatSection("Diff", body)
+	return widget.NewRichText(content...)
+}

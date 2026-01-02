@@ -145,7 +145,11 @@ folder/          → Ignore entire folder
 	GitRemotebtn := RemoteButton(w, output)
 	GitRemotebtn.Resize(fyne.NewSize(100, 40))
 	GitRemotebtn.Move(fyne.NewPos(329, 450))
-	return container.NewWithoutLayout(initBtn, stageBtn, commitBtn, statusBtn, pushBtn, logBtn, revertBtn, cloneBtn, Branchbtn, PullBtn, clearBtn, Reflogbtn, SwitchBranchBtn, BranchRenameBtn, GitIgnoreBtn, GitRemotebtn, output)
+
+	Diffbtn := DiffButton(output)
+	Diffbtn.Resize(fyne.NewSize(100, 40))
+	Diffbtn.Move(fyne.NewPos(439, 450))
+	return container.NewWithoutLayout(initBtn, stageBtn, commitBtn, statusBtn, pushBtn, logBtn, revertBtn, cloneBtn, Branchbtn, PullBtn, clearBtn, Reflogbtn, SwitchBranchBtn, BranchRenameBtn, GitIgnoreBtn, GitRemotebtn, Diffbtn, output)
 }
 func InitButton(output *widget.Entry) *widget.Button {
 	return widget.NewButton("Init", func() {
@@ -640,7 +644,7 @@ func GitIgnoreButton(output *widget.Entry, w fyne.Window) *widget.Button {
 }
 func DocumentPage(w fyne.Window) fyne.CanvasObject {
 
-	items := []string{"Init", "Stage", "Status", "Commit", "Push", "Log", "Revert", "Clone", "Branch", "Pull", "Reflog", "GitIgnore", "Remote"}
+	items := []string{"Init", "Stage", "Status", "Commit", "Push", "Log", "Revert", "Clone", "Branch", "Pull", "Reflog", "GitIgnore", "Remote", "Diff"}
 
 	masterContainer := container.NewStack()
 
@@ -772,4 +776,14 @@ func RemoteButton(w fyne.Window, output *widget.Entry) fyne.CanvasObject {
 		runBtn,
 		actionSelect,
 	)
+}
+func DiffButton(output *widget.Entry) *widget.Button {
+	return widget.NewButton("Diff", func() {
+		out, err := git.Diff()
+		if err != nil {
+			output.SetText("error: " + err.Error())
+		} else {
+			output.SetText(out)
+		}
+	})
 }

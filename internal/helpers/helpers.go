@@ -332,6 +332,8 @@ func Decision(title string) fyne.CanvasObject {
 		return doc.GitIgnore()
 	case "Remote":
 		return doc.Remote()
+	case "Diff":
+		return doc.Diff()
 	default:
 		return widget.NewLabel("Unknown Document")
 	}
