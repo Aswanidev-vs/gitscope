@@ -428,3 +428,14 @@ func Diff() (string, error) {
 	out, err := cmd.Output()
 	return string(out), err
 }
+func Reset() (string, error) {
+	repo := state.RepoPath
+	checkdir, err := os.Stat(repo)
+	if err != nil || !checkdir.IsDir() {
+		return "", errors.New("invalid directory path")
+	}
+	cmd := exec.Command("git", "-C", repo, "reset", "HEAD~1")
+	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
+	out, err := cmd.Output()
+	return string(out), err
+}

@@ -633,3 +633,161 @@ This keeps your commits clean and safe.
 	content := FormatSection("Diff", body)
 	return widget.NewRichText(content...)
 }
+func Reset() fyne.CanvasObject {
+	body := `
+git reset is used to move HEAD and control what happens to:
+• commit history
+• staging area (index)
+• working directory (files)
+
+reset → go back to a previous state
+
+🟦 Simple Meaning
+
+Think of git reset as:
+
+"I want to undo something, but in different levels."
+
+Git reset has THREE common modes:
+• --soft
+• --mixed (default)
+• --hard
+
+Each one affects different areas.
+
+🟦 Areas to remember (VERY IMPORTANT)
+
+1. HEAD → last commit pointer
+2. Staging area → git add
+3. Working directory → actual files
+
+🟦 git reset --soft (least destructive)
+
+Command:
+git reset --soft HEAD^
+
+What it does:
+✔ Moves HEAD back
+✔ Keeps changes staged
+✔ Files are NOT changed
+
+Use case:
+You want to redo the last commit message or combine commits.
+
+🟩 Example
+
+You committed too early:
+git commit -m "oops"
+
+Undo commit but keep everything staged:
+git reset --soft HEAD^
+
+Now you can recommit:
+git commit -m "correct message"
+
+🟦 git reset (or git reset --mixed) MOST COMMON
+
+Command:
+git reset HEAD^
+
+This is the default mode.
+
+What it does:
+✔ Moves HEAD back
+✔ Unstages files
+✔ Keeps file changes
+
+Use case:
+You added files but do not want them staged yet.
+
+🟩 Example
+
+git add .
+git commit -m "wrong commit"
+
+Undo commit and unstage changes:
+git reset HEAD^
+
+Now files are edited but not staged.
+
+🟦 git reset --hard (DANGEROUS)
+
+Command:
+git reset --hard HEAD^
+
+What it does:
+✔ Moves HEAD back
+✔ Clears staging area
+✔ Deletes file changes permanently
+
+⚠ Warning:
+This will DESTROY uncommitted changes.
+
+🟩 Example
+
+You completely messed up:
+git reset --hard HEAD^
+
+Your project becomes exactly like the previous commit.
+
+🟥 NEVER use --hard unless you are 100% sure.
+
+🟦 git reset filename (very common)
+
+Command:
+git reset main.go
+
+What it does:
+✔ Unstages a file
+✔ Keeps changes in file
+
+Use case:
+You accidentally added a file.
+
+🟩 Example
+
+git add main.go
+git reset main.go
+
+main.go is no longer staged.
+
+🟦 git reset HEAD (quick unstaging)
+
+Command:
+git reset HEAD
+
+What it does:
+✔ Unstages all files
+✔ Keeps changes
+
+Equivalent to:
+git reset --mixed HEAD
+
+🟦 Why git reset is important
+
+It helps you:
+✔ Fix wrong commits
+✔ Unstage files safely
+✔ Clean your commit history
+✔ Recover from small mistakes
+
+🟨 Beginner Safe Rule
+
+Use these confidently:
+git reset
+git reset filename
+git reset --soft HEAD^
+
+Avoid unless sure:
+git reset --hard
+
+🟢 One-line memory trick
+
+soft  → undo commit, keep staged  
+mixed → undo commit, unstage  
+hard  → delete everything  
+
+`
+	content := FormatSection("Reset", body)
+	return widget.NewRichText(content...)
+}
