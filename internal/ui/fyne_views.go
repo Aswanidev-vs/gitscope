@@ -150,7 +150,7 @@ folder/          → Ignore entire folder
 	Diffbtn.Resize(fyne.NewSize(100, 40))
 	Diffbtn.Move(fyne.NewPos(439, 450))
 
-	Resetbtn := ResetButton(output)
+	Resetbtn := ResetButton(output, w)
 	Resetbtn.Resize(fyne.NewSize(100, 40))
 	Resetbtn.Move(fyne.NewPos(1, 550))
 
@@ -792,13 +792,18 @@ func DiffButton(output *widget.Entry) *widget.Button {
 		}
 	})
 }
-func ResetButton(output *widget.Entry) *widget.Button {
+func ResetButton(output *widget.Entry, w fyne.Window) *widget.Button {
 	return widget.NewButton("Reset", func() {
-		out, err := git.Reset()
-		if err != nil {
-			output.SetText("error: " + err.Error())
-		} else {
-			output.SetText(out)
-		}
+		dialog.ShowConfirm("Reset", "Are you sure you want to proceed?",
+			func(response bool) {
+				if response {
+					out, err := git.Reset()
+					if err != nil {
+						output.SetText("error: " + err.Error())
+					} else {
+						output.SetText(out)
+					}
+				}
+			}, w)
 	})
 }
