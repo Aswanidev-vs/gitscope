@@ -172,5 +172,4 @@ For bugs or feature requests, open an issue with details and reproduction steps.
 This project is licensed under the **MIT License**.
 See the **LICENSE** file for complete details.
 
----
- 7c89a035a6aee72c3a0326bb77781bdf6d052a36
+
