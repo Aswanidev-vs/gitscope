@@ -280,7 +280,10 @@ func Pull(repoPath, branch string) (string, error) {
 	if err != nil {
 		return string(out), fmt.Errorf("An issue occurred while pulling: %v\n%s", err, string(out))
 	}
-	return "Successfully pulled branch: " + branch, nil
+
+	successMsg := "Successfully pulled branch: " + branch
+
+	return successMsg, nil
 }
 
 func Reflog(repoPath string) (string, error) {
