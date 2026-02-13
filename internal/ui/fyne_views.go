@@ -530,7 +530,7 @@ func SettingPage(w fyne.Window) fyne.CanvasObject {
 
 	f1 := widget.NewLabel("GitScope is a modern, lightweight, and visually intuitive Git client built with Go and Fyne. It simplifies essential")
 	f2 := widget.NewLabel("version control operations making Git easier to use for both beginners and experienced developers.")
-	f3 := widget.NewLabel("Version: 1.0.0")
+	f3 := widget.NewLabel("Version: 1.1.3")
 	f4 := widget.NewLabel("Developer: Aswanidev VS")
 
 	link := widget.NewHyperlink("🔗 View Project on GitHub", &url.URL{
