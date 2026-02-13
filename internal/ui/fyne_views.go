@@ -489,14 +489,31 @@ func PullButton(w fyne.Window) fyne.CanvasObject {
 					dialog.ShowError(fmt.Errorf("Pull failed:\n%v\n\n%s", err, output), w)
 					return
 				}
-				msg := "Pull completed successfully."
-				if reset {
-					msg = "Last commit reset and pull completed successfully."
-				}
-				dialog.ShowInformation("Success", msg, w)
+				// msg := "Pull completed successfully."
+				// if reset {
+				// 	msg = "Last commit reset and pull completed successfully."
+				// }
+				// dialog.ShowInformation("Success", msg, w)
 				// fyne.Do(func() {
 				// 	dialog.ShowInformation("Success", msg, w)
 				// })
+
+				fyne.Do(func() {
+					progress.Hide()
+
+					if err != nil {
+						dialog.ShowError(err, w)
+						return
+					}
+
+					msg := "Pull completed successfully."
+					if reset {
+						msg = "Last commit reset and pull completed successfully."
+					}
+
+					dialog.ShowInformation("Success", msg, w)
+				})
+
 			}()
 		}, w)
 	})
