@@ -64,7 +64,7 @@ func NewRepoCmd(w fyne.Window, repoPath string, cmdText string) fyne.CanvasObjec
 					msg = strings.Trim(parts[1], " \"'")
 				}
 
-				output, err := git.Commit(msg)
+				output, err := git.Commit(msg, "Standard")
 				outStr := string(output)
 
 				// ✅ Ignore harmless commit warnings
@@ -170,13 +170,12 @@ func BranchSelector(repoPath string, w fyne.Window) (fyne.CanvasObject, func() s
 	var mu sync.Mutex
 
 	updateList := func() {
+		if state.RepoPath == "" {
+			return
+		}
 
 		branches, err := ListPush(state.RepoPath)
 		if err != nil {
-			// fyne.Do(func() {
-			// 	selectEntry.SetText("Error loading branches")
-			// })
-			fmt.Println("Branch load error:", err)
 			return
 		}
 
@@ -234,6 +233,21 @@ func slicesEqual(a, b []string) bool {
 		}
 	}
 	return true
+}
+
+// OptionSelector creates a UI component for selecting from a list of static options.
+func OptionSelector(options []string) (fyne.CanvasObject, func() string) {
+	selected := options[0] // Default to the first option
+	selectWidget := widget.NewSelect(options, func(s string) {
+		selected = s
+	})
+	selectWidget.SetSelected(selected)
+
+	getSelectedOption := func() string {
+		return selected
+	}
+
+	return selectWidget, getSelectedOption
 }
 
 func ExistingRepoCmd(w fyne.Window, repoPath string, cmdText string) {

@@ -27,21 +27,31 @@ func Init() (string, error) {
 	out, err := cmd.Output()
 	return string(out), err
 }
-func Status() (string, error) {
+func Status(option string) (string, error) {
 	repo := state.RepoPath
 	checkdir, err := os.Stat(repo)
 	if err != nil || !checkdir.IsDir() {
 		return "", errors.New("invalid directory path")
 	}
 
-	cmd := exec.Command("git", "-C", repo, "status")
+	args := []string{"-C", repo, "status"}
+	switch option {
+	case "Short (-s)":
+		args = append(args, "-s")
+	case "Branch (-b)":
+		args = append(args, "-b")
+	default:
+		// Standard status
+	}
+
+	cmd := exec.Command("git", args...)
 	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
 	out, err := cmd.CombinedOutput()
 	return string(out), err
 }
 
 // Commit creates a new commit with the given message.
-func Commit(msg string) (string, error) {
+func Commit(msg, option string) (string, error) {
 	repo := state.RepoPath
 	checkdir, err := os.Stat(repo)
 	if err != nil || !checkdir.IsDir() {
@@ -60,15 +70,26 @@ func Commit(msg string) (string, error) {
 		return "", errors.New("invalid Git repository path")
 	}
 
-	// Check for staged changes
-	statusCmd := exec.Command("git", "-C", repo, "diff", "--cached", "--quiet")
-	statusCmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
-	if err := statusCmd.Run(); err == nil {
-		return "", errors.New("no staged changes to commit")
+	args := []string{"-C", repo, "commit", "-m", msg}
+	skipStageCheck := false
+
+	if option == "Stage All (-a)" {
+		args = append(args, "-a")
+		skipStageCheck = true
+	} else if option == "Amend (--amend)" {
+		args = append(args, "--amend")
+		skipStageCheck = true
 	}
 
-	// Proceed with commit
-	cmd := exec.Command("git", "-C", repo, "commit", "-m", msg)
+	if !skipStageCheck {
+		statusCmd := exec.Command("git", "-C", repo, "diff", "--cached", "--quiet")
+		statusCmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
+		if err := statusCmd.Run(); err == nil {
+			return "", errors.New("no staged changes to commit")
+		}
+	}
+
+	cmd := exec.Command("git", args...)
 	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
 	out, err := cmd.CombinedOutput()
 
@@ -83,29 +104,36 @@ func Commit(msg string) (string, error) {
 	return string(out), nil
 }
 
-// Stage adds all modified/untracked files to the Git index (staging area)
-func Stage() (string, error) {
-
+// Stage adds files to the Git index based on the provided option.
+func Stage(option string) (string, error) {
 	repo := state.RepoPath
 	checkdir, err := os.Stat(repo)
 	if err != nil || !checkdir.IsDir() {
 		return "", errors.New("invalid directory path")
 	}
-	// if state.RepoPath == "" {
-	// 	return "", errors.New("no repository path selected")
-	// }
-	cmd := exec.Command("git", "-C", repo, "add", ".")
+
+	args := []string{"-C", repo, "add"}
+	switch option {
+	case "All (.)":
+		args = append(args, ".")
+	case "Untracked (-u)":
+		args = append(args, "-u")
+	// "Interactive (-p)" is not supported as it requires terminal interaction.
+	default:
+		// Default to adding all
+		args = append(args, ".")
+	}
+
+	cmd := exec.Command("git", args...)
 	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
 	out, err := cmd.CombinedOutput()
 
 	if err != nil {
-		// Return full Git output for accurate debugging
 		return string(out), fmt.Errorf("%v\n%s", err, string(out))
 	}
 
-	// Usually, git add . returns no output unless something goes wrong
 	if len(out) == 0 {
-		return "All changes staged successfully.", nil
+		return "Changes staged successfully.", nil
 	}
 
 	return string(out), nil
@@ -151,13 +179,24 @@ func Push(repoPath, branch string) (string, error) {
 	}
 	return string(out), nil
 }
-func Log(repoPath string) (string, error) {
+func Log(repoPath, option string) (string, error) {
 	repo := repoPath
 	checkdir, err := os.Stat(repo)
 	if err != nil || !checkdir.IsDir() {
 		return "", errors.New("invalid directory path")
 	}
-	cmd := exec.Command("git", "-C", repo, "log", "--oneline")
+	args := []string{"-C", repo, "log"}
+	switch option {
+	case "Oneline":
+		args = append(args, "--oneline")
+	case "Graph":
+		args = append(args, "--graph", "--oneline", "--decorate", "--all")
+	case "Pretty":
+		args = append(args, `--pretty=format:%h - %an, %ar : %s`)
+	default:
+		args = append(args, "--oneline")
+	}
+	cmd := exec.Command("git", args...)
 	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
 	out, err := cmd.CombinedOutput()
 
@@ -166,7 +205,7 @@ func Log(repoPath string) (string, error) {
 	}
 	return string(out), nil
 }
-func Revert(commitHash string) (string, error) {
+func Revert(commitHash, option string) (string, error) {
 
 	repo := state.RepoPath
 	checkdir, err := os.Stat(repo)
@@ -184,19 +223,6 @@ func Revert(commitHash string) (string, error) {
 	if err := checkRepo.Run(); err != nil {
 		return "", errors.New("invalid Git repository path")
 	}
-	// Auto-stash uncommitted changes
-	stashCmd := exec.Command("git", "-C", repo, "stash", "--include-untracked")
-	stashCmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
-	stashOut, _ := stashCmd.CombinedOutput()
-
-	cmd := exec.Command("git", "-C", repo, "revert", "--no-edit", commitHash)
-	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
-	output, err := cmd.CombinedOutput()
-
-	// Restore stash if it existed
-	if !strings.Contains(string(stashOut), "No local changes") {
-		exec.Command("git", "-C", repo, "stash", "pop").Run()
-	}
 
 	// 2️⃣ Check for uncommitted changes before revert
 	checkChanges := exec.Command("git", "-C", repo, "status", "--porcelain")
@@ -206,7 +232,22 @@ func Revert(commitHash string) (string, error) {
 		return "", errors.New("uncommitted changes present — please commit or stash before reverting")
 	}
 
-	return string(output), err
+	args := []string{"-C", repo, "revert"}
+	switch option {
+	case "--no-edit":
+		args = append(args, "--no-edit", commitHash)
+	case "--no-commit":
+		args = append(args, "--no-commit", commitHash)
+	default:
+		args = append(args, "--no-edit", commitHash)
+	}
+	cmd := exec.Command("git", args...)
+	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		return string(output), fmt.Errorf("revert failed: %v\n%s", err, string(output))
+	}
+	return string(output), nil
 }
 func Clone(repoPath, cloneURL string) (string, error) {
 	parentDir := filepath.Dir(repoPath)
@@ -286,13 +327,20 @@ func Pull(repoPath, branch string) (string, error) {
 	return successMsg, nil
 }
 
-func Reflog(repoPath string) (string, error) {
+func Reflog(repoPath, option string) (string, error) {
 	repo := repoPath
 	checkdir, err := os.Stat(repo)
 	if err != nil || !checkdir.IsDir() {
 		return "", errors.New("invalid directory path")
 	}
-	cmd := exec.Command("git", "-C", repo, "reflog")
+	args := []string{"-C", repo, "reflog"}
+
+	if option == "Limit 20 (-n 20)" {
+		args = append(args, "-n", "20")
+	} else if option == "Date Relative" {
+		args = append(args, "--date=relative")
+	}
+	cmd := exec.Command("git", args...)
 	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
 	out, err := cmd.CombinedOutput()
 	if err != nil {
@@ -420,25 +468,146 @@ func GitRemote(action string, args string) (string, error) {
 	return string(output), nil
 }
 
-func Diff() (string, error) {
+func Diff(option string) (string, error) {
 	repo := state.RepoPath
 	checkdir, err := os.Stat(repo)
 	if err != nil || !checkdir.IsDir() {
 		return "", errors.New("invalid directory path")
 	}
-	cmd := exec.Command("git", "-C", repo, "diff")
+	args := []string{"-C", repo, "diff"}
+	switch option {
+	case "Unstaged":
+	// no extra arg
+	case "Staged (--cached)":
+		args = append(args, "--cached")
+	case "Names (--name-only)":
+		args = append(args, "--name-only")
+	case "Summary (--stat)":
+		args = append(args, "--stat")
+	default:
+		// default to unstaged
+	}
+	cmd := exec.Command("git", args...)
 	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
-	out, err := cmd.Output()
+	out, err := cmd.CombinedOutput()
 	return string(out), err
 }
-func Reset() (string, error) {
+func Reset(mode, target string) (string, error) {
 	repo := state.RepoPath
 	checkdir, err := os.Stat(repo)
 	if err != nil || !checkdir.IsDir() {
 		return "", errors.New("invalid directory path")
 	}
-	cmd := exec.Command("git", "-C", repo, "reset", "HEAD~1")
+	// git reset <mode> <target>
+	cmd := exec.Command("git", "-C", repo, "reset", mode, target)
 	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
-	out, err := cmd.Output()
+	out, err := cmd.CombinedOutput()
 	return string(out), err
+}
+
+func Fetch(repoPath, option string) (string, error) {
+	checkdir, err := os.Stat(repoPath)
+	if err != nil || !checkdir.IsDir() {
+		return "", errors.New("invalid directory path")
+	}
+	args := []string{"-C", repoPath, "fetch"}
+	if option == "All (--all)" {
+		args = append(args, "--all")
+	} else if option != "Default" {
+		args = append(args, option) // Allow specifying a remote
+	}
+	cmd := exec.Command("git", args...)
+	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		return string(out), fmt.Errorf("fetch failed: %v\n%s", err, string(out))
+	}
+	if len(out) == 0 {
+		return "Fetch completed. No new changes found.", nil
+	}
+	return string(out), nil
+}
+
+func Stash(repoPath, action string) (string, error) {
+	checkdir, err := os.Stat(repoPath)
+	if err != nil || !checkdir.IsDir() {
+		return "", errors.New("invalid directory path")
+	}
+	args := []string{"-C", repoPath, "stash"}
+	
+	switch action {
+	case "pop":
+		args = append(args, "pop")
+	case "list":
+		args = append(args, "list")
+	case "drop":
+		args = append(args, "drop")
+	case "apply":
+		args = append(args, "apply")
+	default: // save
+	}
+	
+	cmd := exec.Command("git", args...)
+	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		return string(out), fmt.Errorf("stash %s failed: %v\n%s", action, err, string(out))
+	}
+	if len(out) == 0 && action == "list" {
+		return "No stashes found.", nil
+	}
+	return string(out), nil
+}
+
+func Merge(repoPath, branchname string) (string, error) {
+	checkdir, err := os.Stat(repoPath)
+	if err != nil || !checkdir.IsDir() {
+		return "", errors.New("invalid directory path")
+	}
+	if branchname == "" {
+		return "", errors.New("branch name cannot be empty")
+	}
+	cmd := exec.Command("git", "-C", repoPath, "merge", branchname)
+	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		return string(out), fmt.Errorf("merge failed: %v\n%s", err, string(out))
+	}
+	return string(out), nil
+}
+
+func Tag(repoPath, action, tagname string) (string, error) {
+	checkdir, err := os.Stat(repoPath)
+	if err != nil || !checkdir.IsDir() {
+		return "", errors.New("invalid directory path")
+	}
+	
+	args := []string{"-C", repoPath, "tag"}
+	if action == "create" {
+		if tagname == "" {
+			return "", errors.New("tag name cannot be empty")
+		}
+		args = append(args, tagname)
+	} else if action == "delete" {
+		if tagname == "" {
+			return "", errors.New("tag name cannot be empty")
+		}
+		args = append(args, "-d", tagname)
+	}
+	
+	cmd := exec.Command("git", args...)
+	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		return string(out), fmt.Errorf("tag %s failed: %v\n%s", action, err, string(out))
+	}
+	
+	if len(out) == 0 && action == "list" {
+		return "No tags found.", nil
+	}
+	if len(out) == 0 && action == "create" {
+		return "Tag created successfully.", nil
+	}
+	
+	return string(out), nil
 }
