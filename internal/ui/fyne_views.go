@@ -154,7 +154,39 @@ folder/          → Ignore entire folder
 	Resetbtn_comp.Resize(fyne.NewSize(100, 80))
 	Resetbtn_comp.Move(fyne.NewPos(1, 550))
 
-	return container.NewWithoutLayout(initBtn, stageBtn, commitBtn_comp, statusBtn_comp, pushBtn, logBtn_comp, revertBtn, cloneBtn, Branchbtn, PullBtn, clearBtn, Reflogbtn, SwitchBranchBtn, BranchRenameBtn, GitIgnoreBtn, GitRemotebtn, Diffbtn_comp, Resetbtn_comp, output)
+	magicSyncBtn := MagicSyncButton(output)
+	magicSyncBtn.Resize(fyne.NewSize(100, 40))
+	magicSyncBtn.Move(fyne.NewPos(110, 550))
+
+	undoBtn := UndoButton(output, w)
+	undoBtn.Resize(fyne.NewSize(100, 40))
+	undoBtn.Move(fyne.NewPos(220, 550))
+
+	cherryPickBtn := CherryPickButton(output, w)
+	cherryPickBtn.Resize(fyne.NewSize(100, 40))
+	cherryPickBtn.Move(fyne.NewPos(329, 550))
+
+	conflictBtn := ConflictButton(output, w)
+	conflictBtn.Resize(fyne.NewSize(100, 40))
+	conflictBtn.Move(fyne.NewPos(439, 550))
+
+	tagBtn_comp := TagButton(output, w)
+	tagBtn_comp.Resize(fyne.NewSize(100, 80))
+	tagBtn_comp.Move(fyne.NewPos(1, 650))
+
+	fetchBtn_comp := FetchButton(output, w)
+	fetchBtn_comp.Resize(fyne.NewSize(100, 80))
+	fetchBtn_comp.Move(fyne.NewPos(110, 650))
+
+	stashBtn_comp := StashButton(output, w)
+	stashBtn_comp.Resize(fyne.NewSize(100, 80))
+	stashBtn_comp.Move(fyne.NewPos(220, 650))
+
+	mergeBtn_comp := MergeButton(output, w)
+	mergeBtn_comp.Resize(fyne.NewSize(100, 80))
+	mergeBtn_comp.Move(fyne.NewPos(329, 650))
+
+	return container.NewWithoutLayout(initBtn, stageBtn, commitBtn_comp, statusBtn_comp, pushBtn, logBtn_comp, revertBtn, cloneBtn, Branchbtn, PullBtn, clearBtn, Reflogbtn, SwitchBranchBtn, BranchRenameBtn, GitIgnoreBtn, GitRemotebtn, Diffbtn_comp, Resetbtn_comp, magicSyncBtn, undoBtn, cherryPickBtn, conflictBtn, tagBtn_comp, fetchBtn_comp, stashBtn_comp, mergeBtn_comp, output)
 }
 func InitButton(output *widget.Entry) *widget.Button {
 	return widget.NewButton("Init", func() {
@@ -680,7 +712,7 @@ func GitIgnoreButton(output *widget.Entry, w fyne.Window) *widget.Button {
 }
 func DocumentPage(w fyne.Window) fyne.CanvasObject {
 
-	items := []string{"Init", "Stage", "Status", "Commit", "Push", "Log", "Revert", "Clone", "Branch", "Pull", "Reflog", "GitIgnore", "Remote", "Diff", "Reset", "Fetch", "Stash", "Merge", "Tag"}
+	items := []string{"Init", "Stage", "Status", "Commit", "Push", "Log", "Revert", "Clone", "Branch", "Pull", "Reflog", "GitIgnore", "Remote", "Diff", "Reset", "Fetch", "Stash", "Merge", "Tag", "Cherry-pick"}
 
 	masterContainer := container.NewStack()
 
@@ -869,4 +901,278 @@ func ResetButton(output *widget.Entry, w fyne.Window) fyne.CanvasObject {
 		}, w)
 	})
 	return container.NewVBox(resetBtn, resetSelect)
+}
+
+func MagicSyncButton(output *widget.Entry) *widget.Button {
+	return widget.NewButton("Magic Sync", func() {
+		if state.RepoPath == "" {
+			output.SetText("Error: No repository selected.")
+			return
+		}
+		if _, err := os.Stat(state.RepoPath); os.IsNotExist(err) {
+			output.SetText("Error: Repository path does not exist.")
+			return
+		}
+
+		output.SetText("Starting Magic Sync...")
+		out, err := git.MagicSync()
+		if err != nil {
+			output.SetText(out + "\n\nError: " + err.Error())
+		} else {
+			output.SetText(out + "\n\nMagic Sync completed successfully!")
+		}
+	})
+}
+
+func UndoButton(output *widget.Entry, w fyne.Window) *widget.Button {
+	return widget.NewButton("Undo", func() {
+		if state.RepoPath == "" {
+			dialog.ShowInformation("Repository Not Selected", "Please select a repository first.", w)
+			return
+		}
+		if _, err := os.Stat(state.RepoPath); os.IsNotExist(err) {
+			dialog.ShowError(errors.New("Repository path does not exist"), w)
+			return
+		}
+
+		dialog.ShowConfirm("Undo Last Commit", "Are you sure you want to undo the last commit? Changes will remain staged.", func(confirm bool) {
+			if confirm {
+				out, err := git.UndoLastCommit()
+				if err != nil {
+					output.SetText("error: " + err.Error())
+				} else {
+					output.SetText(out)
+				}
+			}
+		}, w)
+	})
+}
+
+func CherryPickButton(output *widget.Entry, w fyne.Window) *widget.Button {
+	return widget.NewButton("Cherry-pick", func() {
+		if state.RepoPath == "" {
+			dialog.ShowInformation("Repository Not Selected", "Please select a repository first.", w)
+			return
+		}
+		if _, err := os.Stat(state.RepoPath); os.IsNotExist(err) {
+			dialog.ShowError(errors.New("Repository path does not exist"), w)
+			return
+		}
+
+		input := widget.NewEntry()
+		input.SetPlaceHolder("Enter commit hash")
+		form := []*widget.FormItem{
+			{Text: "Hash", Widget: input},
+		}
+		dialog.ShowForm("Cherry-pick Commit", "Apply", "Cancel", form, func(valid bool) {
+			if valid {
+				hash := strings.TrimSpace(input.Text)
+				if hash == "" {
+					return
+				}
+				out, err := git.CherryPick(hash)
+				if err != nil {
+					output.SetText("error: " + err.Error())
+				} else {
+					output.SetText("Cherry-pick result:\n" + out)
+				}
+			}
+		}, w)
+	})
+}
+
+func ConflictButton(output *widget.Entry, w fyne.Window) *widget.Button {
+	return widget.NewButton("Conflicts", func() {
+		if state.RepoPath == "" {
+			dialog.ShowInformation("Repository Not Selected", "Please select a repository first.", w)
+			return
+		}
+		if _, err := os.Stat(state.RepoPath); os.IsNotExist(err) {
+			dialog.ShowError(errors.New("Repository path does not exist"), w)
+			return
+		}
+
+		conflicts, err := git.GetConflicts()
+		if err != nil {
+			output.SetText("error fetching conflicts: " + err.Error())
+			return
+		}
+		if len(conflicts) == 0 {
+			dialog.ShowInformation("No Conflicts", "No merge conflicts detected.", w)
+			return
+		}
+
+		content := container.NewVBox()
+		for _, file := range conflicts {
+			f := file // capture for closure
+			row := container.NewHBox(
+				widget.NewLabel(f),
+				layout.NewSpacer(),
+				widget.NewButton("Keep Mine", func() {
+					out, err := git.ResolveConflict(f, "ours")
+					if err != nil {
+						output.SetText("error: " + err.Error())
+					} else {
+						output.SetText(out)
+						dialog.ShowInformation("Resolved", "Resolved "+f+" with 'ours'", w)
+					}
+				}),
+				widget.NewButton("Take Theirs", func() {
+					out, err := git.ResolveConflict(f, "theirs")
+					if err != nil {
+						output.SetText("error: " + err.Error())
+					} else {
+						output.SetText(out)
+						dialog.ShowInformation("Resolved", "Resolved "+f+" with 'theirs'", w)
+					}
+				}),
+			)
+			content.Add(row)
+		}
+
+		scroll := container.NewVScroll(content)
+		scroll.SetMinSize(fyne.NewSize(400, 300))
+		dialog.ShowCustom("Resolve Conflicts", "Close", scroll, w)
+	})
+}
+
+func TagButton(output *widget.Entry, w fyne.Window) fyne.CanvasObject {
+	actions := []string{"List", "Create", "Push", "Delete"}
+	tagSelect := widget.NewSelect(actions, func(value string) {})
+	tagSelect.SetSelected("List")
+
+	tagBtn := widget.NewButton("Tag", func() {
+		if state.RepoPath == "" {
+			dialog.ShowInformation("Repository Not Selected", "Please select a repository first.", w)
+			return
+		}
+		if _, err := os.Stat(state.RepoPath); os.IsNotExist(err) {
+			dialog.ShowError(errors.New("Repository path does not exist"), w)
+			return
+		}
+
+		action := strings.ToLower(tagSelect.Selected)
+
+		if action == "list" {
+			out, err := git.Tag(state.RepoPath, "list", "")
+			if err != nil {
+				output.SetText("error: " + err.Error())
+			} else {
+				output.SetText(out)
+			}
+			return
+		}
+
+		// Create, Push, Delete need a tag name
+		tagNameEntry := widget.NewEntry()
+		tagNameEntry.SetPlaceHolder("Enter tag name")
+		form := []*widget.FormItem{
+			{Text: "Tag Name", Widget: tagNameEntry},
+		}
+
+		dialogTitle := fmt.Sprintf("Git Tag: %s", tagSelect.Selected)
+		dialog.ShowForm(dialogTitle, tagSelect.Selected, "Cancel", form, func(valid bool) {
+			if valid {
+				name := strings.TrimSpace(tagNameEntry.Text)
+				if name == "" {
+					return
+				}
+				out, err := git.Tag(state.RepoPath, action, name)
+				if err != nil {
+					output.SetText("error: " + err.Error())
+				} else {
+					output.SetText(out)
+				}
+			}
+		}, w)
+	})
+
+	return container.NewVBox(tagBtn, tagSelect)
+}
+
+func FetchButton(output *widget.Entry, w fyne.Window) fyne.CanvasObject {
+	options := []string{"Default", "All (--all)"}
+	fetchSelect := widget.NewSelect(options, func(value string) {})
+	fetchSelect.SetSelected("Default")
+
+	fetchBtn := widget.NewButton("Fetch", func() {
+		if state.RepoPath == "" {
+			dialog.ShowInformation("Repository Not Selected", "Please select a repository first.", w)
+			return
+		}
+		if _, err := os.Stat(state.RepoPath); os.IsNotExist(err) {
+			dialog.ShowError(errors.New("Repository path does not exist"), w)
+			return
+		}
+
+		out, err := git.Fetch(state.RepoPath, fetchSelect.Selected)
+		if err != nil {
+			output.SetText("error: " + err.Error())
+		} else {
+			output.SetText(out)
+		}
+	})
+
+	return container.NewVBox(fetchBtn, fetchSelect)
+}
+
+func StashButton(output *widget.Entry, w fyne.Window) fyne.CanvasObject {
+	options := []string{"Save", "Pop", "List", "Drop", "Apply"}
+	stashSelect := widget.NewSelect(options, func(value string) {})
+	stashSelect.SetSelected("Save")
+
+	stashBtn := widget.NewButton("Stash", func() {
+		if state.RepoPath == "" {
+			dialog.ShowInformation("Repository Not Selected", "Please select a repository first.", w)
+			return
+		}
+		if _, err := os.Stat(state.RepoPath); os.IsNotExist(err) {
+			dialog.ShowError(errors.New("Repository path does not exist"), w)
+			return
+		}
+
+		action := strings.ToLower(stashSelect.Selected)
+		out, err := git.Stash(state.RepoPath, action)
+		if err != nil {
+			output.SetText("error: " + err.Error())
+		} else {
+			output.SetText(out)
+		}
+	})
+
+	return container.NewVBox(stashBtn, stashSelect)
+}
+
+func MergeButton(output *widget.Entry, w fyne.Window) fyne.CanvasObject {
+	items, getSelected := helpers.BranchSelector(state.RepoPath, w)
+
+	mergeBtn := widget.NewButton("Merge", func() {
+		if state.RepoPath == "" {
+			dialog.ShowInformation("Repository Not Selected", "Please select a repository first.", w)
+			return
+		}
+		if _, err := os.Stat(state.RepoPath); os.IsNotExist(err) {
+			dialog.ShowError(errors.New("Repository path does not exist"), w)
+			return
+		}
+
+		branch := getSelected()
+		if branch == "" {
+			dialog.ShowError(errors.New("Please select a branch to merge"), w)
+			return
+		}
+
+		dialog.ShowConfirm("Confirm Merge", fmt.Sprintf("Are you sure you want to merge '%s' into current branch?", branch), func(confirm bool) {
+			if confirm {
+				out, err := git.Merge(state.RepoPath, branch)
+				if err != nil {
+					output.SetText("error: " + err.Error())
+				} else {
+					output.SetText(out)
+				}
+			}
+		}, w)
+	})
+
+	return container.NewVBox(mergeBtn, items)
 }

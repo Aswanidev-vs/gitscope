@@ -791,3 +791,83 @@ hard  → delete everything
 	content := FormatSection("Reset", body)
 	return widget.NewRichText(content...)
 }
+
+func Fetch() fyne.CanvasObject {
+	body := `git fetch downloads commits, files, and refs from a remote repository into your local repo.
+
+Simple definition:
+Fetch gets updates from the remote but does NOT merge them into your local work.
+
+Why fetch is useful:
+• see what others have worked on without changing your files
+• check for branch updates safely
+• update remote-tracking branches
+
+Common commands:
+git fetch origin
+git fetch --all`
+
+	content := FormatSection("Git Fetch", body)
+	return widget.NewRichText(content...)
+}
+
+func Stash() fyne.CanvasObject {
+	body := `git stash temporarily shelves (or stashes) changes you've made to your working copy so you can work on something else.
+
+Simple definition:
+Stash is a "drawer" where you put unfinished work to get a clean directory.
+
+Common usage:
+git stash          (save changes)
+git stash list     (see saved stashes)
+git stash pop      (apply and remove latest)
+git stash apply    (apply and keep in stash)`
+
+	content := FormatSection("Git Stash", body)
+	return widget.NewRichText(content...)
+}
+
+func Merge() fyne.CanvasObject {
+	body := `git merge joins two or more development histories together.
+
+Simple definition:
+Merge combines changes from one branch into another (usually into main).
+
+Example:
+git branch feature-x
+# ... work ...
+git switch main
+git merge feature-x
+
+If changes conflict, Git will ask you to resolve them manually.`
+
+	content := FormatSection("Git Merge", body)
+	return widget.NewRichText(content...)
+}
+
+func Tag() fyne.CanvasObject {
+	body := `Tags are used to mark specific points in history as being important, typically for releases (v1.0, v2.0).
+
+Simple definition:
+A tag is a permanent label for a specific commit.
+
+Commands:
+git tag v1.0
+git push origin v1.0`
+
+	content := FormatSection("Git Tag", body)
+	return widget.NewRichText(content...)
+}
+
+func CherryPick() fyne.CanvasObject {
+	body := `git cherry-pick applies the changes introduced by some existing commits to your current branch.
+
+Simple definition:
+"Copy and paste" a single commit from one branch to another.
+
+Command:
+git cherry-pick <commit-hash>`
+
+	content := FormatSection("Git Cherry-pick", body)
+	return widget.NewRichText(content...)
+}

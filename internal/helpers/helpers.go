@@ -444,6 +444,16 @@ func Decision(title string) fyne.CanvasObject {
 		return doc.Diff()
 	case "Reset":
 		return doc.Reset()
+	case "Fetch":
+		return doc.Fetch()
+	case "Stash":
+		return doc.Stash()
+	case "Merge":
+		return doc.Merge()
+	case "Tag":
+		return doc.Tag()
+	case "Cherry-pick":
+		return doc.CherryPick()
 	default:
 		return widget.NewLabel("Unknown Document")
 	}

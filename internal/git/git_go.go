@@ -582,32 +582,144 @@ func Tag(repoPath, action, tagname string) (string, error) {
 		return "", errors.New("invalid directory path")
 	}
 	
-	args := []string{"-C", repoPath, "tag"}
-	if action == "create" {
+	args := []string{"-C", repoPath}
+	if action == "push" {
 		if tagname == "" {
-			return "", errors.New("tag name cannot be empty")
+			return "", errors.New("tag name cannot be empty for push")
 		}
-		args = append(args, tagname)
-	} else if action == "delete" {
-		if tagname == "" {
-			return "", errors.New("tag name cannot be empty")
+		args = append(args, "push", "origin", tagname)
+	} else {
+		args = append(args, "tag")
+		if action == "create" {
+			if tagname == "" {
+				return "", errors.New("tag name cannot be empty")
+			}
+			args = append(args, tagname)
+		} else if action == "delete" {
+			if tagname == "" {
+				return "", errors.New("tag name cannot be empty")
+			}
+			args = append(args, "-d", tagname)
 		}
-		args = append(args, "-d", tagname)
 	}
-	
+
 	cmd := exec.Command("git", args...)
 	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
 	out, err := cmd.CombinedOutput()
 	if err != nil {
-		return string(out), fmt.Errorf("tag %s failed: %v\n%s", action, err, string(out))
+		return string(out), fmt.Errorf("%s failed: %v\n%s", action, err, string(out))
 	}
-	
-	if len(out) == 0 && action == "list" {
-		return "No tags found.", nil
+
+	if len(out) == 0 {
+		switch action {
+		case "list":
+			return "No tags found.", nil
+		case "create":
+			return "Tag created successfully.", nil
+		case "delete":
+			return "Tag deleted successfully.", nil
+		case "push":
+			return "Tag pushed successfully.", nil
+		}
 	}
-	if len(out) == 0 && action == "create" {
-		return "Tag created successfully.", nil
-	}
-	
+
 	return string(out), nil
+}
+
+func MagicSync() (string, error) {
+	repo := state.RepoPath
+	var log strings.Builder
+
+	// 1. Stash changes
+	log.WriteString("Step 1: Stashing local changes...\n")
+	cmd := exec.Command("git", "-C", repo, "stash")
+	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
+	out, _ := cmd.CombinedOutput()
+	log.Write(out)
+
+	// 2. Fetch
+	log.WriteString("\nStep 2: Fetching from origin...\n")
+	cmd = exec.Command("git", "-C", repo, "fetch")
+	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
+	out, _ = cmd.CombinedOutput()
+	log.Write(out)
+
+	// 3. Pull Rebase
+	log.WriteString("\nStep 3: Pulling with rebase...\n")
+	cmd = exec.Command("git", "-C", repo, "pull", "--rebase")
+	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
+	out, err := cmd.CombinedOutput()
+	log.Write(out)
+	if err != nil {
+		return log.String(), fmt.Errorf("MagicSync failed at pull: %v", err)
+	}
+
+	// 4. Stash Pop
+	log.WriteString("\nStep 4: Popping stash...\n")
+	cmd = exec.Command("git", "-C", repo, "stash", "pop")
+	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
+	out, _ = cmd.CombinedOutput()
+	log.Write(out)
+
+	return log.String(), nil
+}
+
+func UndoLastCommit() (string, error) {
+	repo := state.RepoPath
+	cmd := exec.Command("git", "-C", repo, "reset", "--soft", "HEAD~1")
+	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		return string(out), err
+	}
+	return "Last commit undone. Changes are now staged.", nil
+}
+
+func CherryPick(hash string) (string, error) {
+	repo := state.RepoPath
+	cmd := exec.Command("git", "-C", repo, "cherry-pick", hash)
+	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		return string(out), err
+	}
+	return string(out), nil
+}
+
+func GetConflicts() ([]string, error) {
+	repo := state.RepoPath
+	cmd := exec.Command("git", "-C", repo, "diff", "--name-only", "--diff-filter=U")
+	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		return nil, err
+	}
+	lines := strings.Split(strings.TrimSpace(string(out)), "\n")
+	var conflicts []string
+	for _, l := range lines {
+		if l != "" {
+			conflicts = append(conflicts, l)
+		}
+	}
+	return conflicts, nil
+}
+
+func ResolveConflict(file string, strategy string) (string, error) {
+	repo := state.RepoPath
+	// strategy should be "ours" or "theirs"
+	cmd := exec.Command("git", "-C", repo, "checkout", "--"+strategy, file)
+	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		return string(out), err
+	}
+
+	// Must add the resolved file
+	cmd = exec.Command("git", "-C", repo, "add", file)
+	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
+	out2, err2 := cmd.CombinedOutput()
+	if err2 != nil {
+		return string(out) + "\n" + string(out2), err2
+	}
+	return string(out) + "\n" + string(out2), nil
 }
