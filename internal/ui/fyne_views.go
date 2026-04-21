@@ -776,13 +776,38 @@ func RemoteButton(w fyne.Window, output *widget.Entry) fyne.CanvasObject {
 			urlEntry.SetPlaceHolder("Remote URL")
 
 			formItems := []*widget.FormItem{
-				widget.NewFormItem("Remote Name", nameEntry),
-				widget.NewFormItem("Remote URL", urlEntry),
+				widget.NewFormItem("", nameEntry),
+				widget.NewFormItem("", urlEntry),
 			}
 
+			// dialog.ShowForm("Add Remote", "Add", "Cancel", formItems, func(ok bool) {
+			// 	if ok {
+			// 		result, err := git.GitRemote("add", urlEntry.Text)
+			// 		if err != nil {
+			// 			output.SetText(fmt.Sprintf("Error: %v\n%s", err, result))
+			// 		} else {
+			// 			output.SetText(result)
+			// 		}
+			// 	}
+			// }, w)
 			dialog.ShowForm("Add Remote", "Add", "Cancel", formItems, func(ok bool) {
 				if ok {
-					result, err := git.GitRemote("add", urlEntry.Text)
+					name := strings.TrimSpace(nameEntry.Text)
+					remoteURL := strings.TrimSpace(urlEntry.Text)
+
+					// Validate both fields are filled
+					if name == "" {
+						output.SetText("Error: Remote name cannot be empty")
+						return
+					}
+					if remoteURL == "" {
+						output.SetText("Error: Remote URL cannot be empty")
+						return
+					}
+
+					// Combine name and URL
+					input := name + " " + remoteURL
+					result, err := git.GitRemote("add", input)
 					if err != nil {
 						output.SetText(fmt.Sprintf("Error: %v\n%s", err, result))
 					} else {
