@@ -816,12 +816,14 @@ func RemoteButton(w fyne.Window, output *widget.Entry) fyne.CanvasObject {
 
 			cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
 		case "add":
+			nameEntry := widget.NewEntry()
+			nameEntry.SetPlaceHolder("Remote Name")
 			urlEntry := widget.NewEntry()
 			urlEntry.SetPlaceHolder("Remote URL")
 
 			formItems := []*widget.FormItem{
-
-				widget.NewFormItem("", urlEntry),
+				widget.NewFormItem("Remote Name", nameEntry),
+				widget.NewFormItem("Remote URL", urlEntry),
 			}
 
 			dialog.ShowForm("Add Remote", "Add", "Cancel", formItems, func(ok bool) {
