@@ -10,11 +10,13 @@ import (
 	"github.com/gitscope/internal/ui"
 )
 
+const appID = "com.gitscope.desktop"
+
 func main() {
 	// Check if Git is available before starting the app
 	if !isGitAvailable() {
 		// Create a temporary app just to show the error dialog
-		tempApp := app.New()
+		tempApp := app.NewWithID(appID)
 		tempWindow := tempApp.NewWindow("GitScope - Git Not Found")
 		tempWindow.SetContent(nil) // Empty content
 

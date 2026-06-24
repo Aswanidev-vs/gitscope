@@ -16,6 +16,8 @@ import (
 	// "github.com/gitscope/internal/ui"
 )
 
+const appID = "com.gitscope.desktop"
+
 type CustomTheme struct {
 	fyne.Theme
 }
@@ -28,7 +30,7 @@ func (c *CustomTheme) Color(name fyne.ThemeColorName, variant fyne.ThemeVariant)
 }
 
 func App() {
-	myApp := app.New()
+	myApp := app.NewWithID(appID)
 	myApp.Settings().SetTheme(&CustomTheme{theme.DefaultTheme()})
 	myWindow := myApp.NewWindow("Gitscope")
 

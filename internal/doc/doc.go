@@ -791,3 +791,231 @@ hard  → delete everything
 	content := FormatSection("Reset", body)
 	return widget.NewRichText(content...)
 }
+
+func Fetch() fyne.CanvasObject {
+	body := `git fetch downloads commits, files, and refs from a remote repository into your local repo.
+
+Simple definition:
+Fetch gets updates from the remote but does NOT merge them into your local work.
+
+Why fetch is useful:
+• see what others have worked on without changing your files
+• check for branch updates safely
+• update remote-tracking branches
+
+Common commands:
+git fetch origin
+git fetch --all`
+
+	content := FormatSection("Git Fetch", body)
+	return widget.NewRichText(content...)
+}
+
+func Stash() fyne.CanvasObject {
+	body := `git stash temporarily shelves (or stashes) changes you've made to your working copy so you can work on something else.
+
+Simple definition:
+Stash is a "drawer" where you put unfinished work to get a clean directory.
+
+Common usage:
+git stash          (save changes)
+git stash list     (see saved stashes)
+git stash pop      (apply and remove latest)
+git stash apply    (apply and keep in stash)`
+
+	content := FormatSection("Git Stash", body)
+	return widget.NewRichText(content...)
+}
+
+func Merge() fyne.CanvasObject {
+	body := `git merge joins two or more development histories together.
+
+Simple definition:
+Merge combines changes from one branch into another (usually into main).
+
+Example:
+git branch feature-x
+# ... work ...
+git switch main
+git merge feature-x
+
+If changes conflict, Git will ask you to resolve them manually.`
+
+	content := FormatSection("Git Merge", body)
+	return widget.NewRichText(content...)
+}
+
+func Tag() fyne.CanvasObject {
+	body := `Tags are used to mark specific points in history as being important, typically for releases (v1.0, v2.0).
+
+Simple definition:
+A tag is a permanent label for a specific commit.
+
+Commands:
+git tag v1.0
+git push origin v1.0`
+
+	content := FormatSection("Git Tag", body)
+	return widget.NewRichText(content...)
+}
+
+func CherryPick() fyne.CanvasObject {
+	body := `git cherry-pick applies the changes introduced by some existing commits to your current branch.
+
+Simple definition:
+"Copy and paste" a single commit from one branch to another.
+
+Command:
+git cherry-pick <commit-hash>`
+
+	content := FormatSection("Git Cherry-pick", body)
+	return widget.NewRichText(content...)
+}
+
+func Rebase() fyne.CanvasObject {
+	body := `git rebase reapplies commits on top of another base tip.
+
+Simple definition:
+Rebase moves your branch's commits to begin at the tip of another branch.
+
+Why rebase is useful:
+• create a linear, cleaner commit history
+• integrate changes from main without merge commits
+• modify or squash multiple commits into one
+
+Common commands:
+git rebase main           (rebase current branch onto main)
+git rebase -i HEAD~3      (interactive rebase, modify last 3 commits)
+git rebase --continue     (continue after resolving conflicts)
+git rebase --abort        (cancel and return to original state)
+git rebase --skip         (skip the current conflicting commit)`
+
+	content := FormatSection("Git Rebase", body)
+	return widget.NewRichText(content...)
+}
+
+func Clean() fyne.CanvasObject {
+	body := `git clean removes untracked files from the working tree.
+
+Simple definition:
+Clean deletes files that Git is not tracking (new files not added).
+
+Why clean is useful:
+• remove build artifacts
+• clean up generated files
+• get a pristine working directory
+
+Common commands:
+git clean -n    (dry run - preview what will be deleted)
+git clean -f     (remove untracked files)
+git clean -fd    (remove untracked files and directories)
+
+Warning: This permanently deletes files!`
+
+	content := FormatSection("Git Clean", body)
+	return widget.NewRichText(content...)
+}
+
+func Show() fyne.CanvasObject {
+	body := `git show shows detailed information about a Git object (usually a commit).
+
+Simple definition:
+Show displays the content of a commit: its message, author, date, and changes.
+
+Why show is useful:
+• view commit details
+• inspect tags and blobs
+• see what changed in a specific commit
+
+Common commands:
+git show HEAD             (show latest commit)
+git show <commit-hash>    (show specific commit)
+git show --stat           (show with file change summary)
+git show --name-only      (show only filenames changed)`
+
+	content := FormatSection("Git Show", body)
+	return widget.NewRichText(content...)
+}
+
+func LsFiles() fyne.CanvasObject {
+	body := `git ls-files shows information about files in the index and working tree.
+
+Simple definition:
+Lists files that Git knows about - either staged or tracked files.
+
+Why ls-files is useful:
+• see what files are being tracked
+• find cached/staged files
+• identify untracked files
+• debug file tracking issues
+
+Common commands:
+git ls-files              (list all tracked files)
+git ls-files --cached     (list staged files)
+git ls-files --others    (list untracked files)
+git ls-files --stage     (show staged files with mode)`
+
+	content := FormatSection("Git Ls-files", body)
+	return widget.NewRichText(content...)
+}
+
+func Worktree() fyne.CanvasObject {
+	body := `git worktree allows multiple working trees attached to a single repository.
+
+Simple definition:
+Worktree lets you work on multiple branches simultaneously in different directories.
+
+Why worktree is useful:
+• work on multiple features at once
+• check other branches without disturbing current work
+• avoid stash/unstash cycles
+
+Common commands:
+git worktree list                 (list all worktrees)
+git worktree add <path> <branch>  (create new worktree)
+git worktree remove <name>        (remove a worktree)
+git worktree prune                 (clean up removed worktree references)`
+
+	content := FormatSection("Git Worktree", body)
+	return widget.NewRichText(content...)
+}
+
+func Shortlog() fyne.CanvasObject {
+	body := `git shortlog summarizes git log output in a user-friendly format.
+
+Simple definition:
+Shows commits grouped by author with their commit counts.
+
+Why shortlog is useful:
+• see who contributed what
+• create release notes
+• get a summary of activity
+
+Common commands:
+git shortlog                (group by author with messages)
+git shortlog -s              (only count commits per author)
+git shortlog -n              (sort by number of commits)
+git shortlog --since="2 weeks" (recent commits only)`
+
+	content := FormatSection("Git Shortlog", body)
+	return widget.NewRichText(content...)
+}
+
+func Blame() fyne.CanvasObject {
+	body := `git blame shows what revision and author last modified each line of a file.
+
+Simple definition:
+Blame annotates each line with the commit that introduced it.
+
+Why blame is useful:
+• find who introduced a change
+• understand when code was added
+• trace bugs to specific commits
+
+Common commands:
+git blame <file>            (show line annotations)
+git blame -L 10,20 <file>   (show only lines 10-20)`
+
+	content := FormatSection("Git Blame", body)
+	return widget.NewRichText(content...)
+}

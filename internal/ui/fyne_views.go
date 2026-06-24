@@ -65,96 +65,156 @@ func RepositoryPage(w fyne.Window) fyne.CanvasObject {
 }
 
 func dashBoardPage(w fyne.Window) fyne.CanvasObject {
+	// Output console at bottom
 	output := widget.NewMultiLineEntry()
+	output.SetPlaceHolder("Output console - command results appear here...")
+	output.Wrapping = fyne.TextWrapWord
 
-	output.Resize(fyne.NewSize(500, 230))
-	output.SetPlaceHolder(`This area shows the output / responses for majority of the commands
-that are triggered by the buttons. You can also add your gitignore
-entries here.I meant .ext as a short form to refer
-to any extension like .go, .html, .css, etc.
+	// Helper to create command grid - fix API usage
+	makeGrid := func(btns []fyne.CanvasObject) fyne.CanvasObject {
+		grid := container.New(
+			layout.NewGridWrapLayout(fyne.NewSize(120, 60)),
+			btns...,
+		)
+		return container.NewPadded(grid)
+	}
 
-*.ext            → Ignore all .ext files everywhere
-/*.ext           → Only ignore .ext files in repo root
-folder/          → Ignore entire folder
-**/name.ext      → Ignore file no matter where it appears
-`)
+	// Tab 1: Common (most used)
+	commonTab := container.NewVBox(
+		widget.NewLabel("Common Commands"),
+		makeGrid([]fyne.CanvasObject{
+			InitButton(output), StageButton(output), StatusButton(output),
+			CommitButton(w), PushButton(w), LogButton(output),
+		}),
+	)
 
-	output.Move(fyne.NewPos(0, 1))
-	clearBtn := widget.NewButton("Clear", func() {
-		output.SetText("") // Clears the content
-	})
-	clearBtn.Resize(fyne.NewSize(100, 40))
-	clearBtn.Move(fyne.NewPos(510, 1))
+	// Tab 2: Branches
+	branchTab := container.NewVBox(
+		widget.NewLabel("Branch Management"),
+		makeGrid([]fyne.CanvasObject{
+			BranchButton(w), SwitchBranchButton(w), MergeButton(output, w),
+			RenameButton(output, w), TagButton(output, w),
+		}),
+	)
 
-	initBtn := InitButton(output)
-	initBtn.Resize(fyne.NewSize(100, 40))
-	initBtn.Move(fyne.NewPos(1, 250))
+	// Tab 3: Remote
+	remoteTab := container.NewVBox(
+		widget.NewLabel("Remote & Sync"),
+		makeGrid([]fyne.CanvasObject{
+			RemoteButton(w, output), FetchButton(output, w), PullButton(w),
+			CloneButton(w), CherryPickButton(output, w),
+		}),
+	)
 
-	stageBtn := StageButton(output)
-	stageBtn.Resize(fyne.NewSize(100, 40))
-	stageBtn.Move(fyne.NewPos(110, 250))
+	// Tab 4: History
+	historyTab := container.NewVBox(
+		widget.NewLabel("History & Review"),
+		makeGrid([]fyne.CanvasObject{
+			LogButton(output), RevertButton(w), ShowButton(output, w),
+			ShortlogButton(output, w), ReflogButton(w, output),
+		}),
+	)
 
-	statusBtn := StatusButton(output)
-	statusBtn.Resize(fyne.NewSize(100, 40))
-	statusBtn.Move(fyne.NewPos(220, 250))
+	// Tab 5: Changes
+	changesTab := container.NewVBox(
+		widget.NewLabel("Changes & Files"),
+		makeGrid([]fyne.CanvasObject{
+			DiffButton(output), StashButton(output, w), CleanButton(output, w),
+			LsFilesButton(output, w), GitIgnoreButton(output, w),
+		}),
+	)
 
-	commitBtn := CommitButton(w)
-	commitBtn.Resize(fyne.NewSize(100, 40))
-	commitBtn.Move(fyne.NewPos(329, 250))
+	// Tab 6: Advanced
+	advancedTab := container.NewVBox(
+		widget.NewLabel("Advanced Operations"),
+		makeGrid([]fyne.CanvasObject{
+			ResetButton(output, w), RebaseButton(output, w), UndoButton(output, w),
+			WorktreeButton(output, w), ConflictButton(output, w),
+		}),
+	)
 
-	pushBtn := PushButton(w)
-	pushBtn.Resize(fyne.NewSize(100, 40))
-	pushBtn.Move(fyne.NewPos(439, 250))
+	// Tab 7: Tools
+	toolsTab := container.NewVBox(
+		widget.NewLabel("Utility Tools"),
+		makeGrid([]fyne.CanvasObject{
+			BlameButton(output, w), MagicSyncButton(output),
+		}),
+	)
 
-	logBtn := LogButton(output)
-	logBtn.Resize(fyne.NewSize(100, 40))
-	logBtn.Move(fyne.NewPos(1, 350))
+	// Content area wrapper (switches content) - declare first before closures
+	contentWrapper := container.NewStack(commonTab)
 
-	revertBtn := RevertButton(w)
-	revertBtn.Resize(fyne.NewSize(100, 40))
-	revertBtn.Move(fyne.NewPos(110, 350))
+	// Category sidebar - buttons update the content wrapper
+	categories := container.NewVBox(
+		widget.NewButton("Common", func() {
+			contentWrapper.Objects = []fyne.CanvasObject{commonTab}
+			contentWrapper.Refresh()
+		}),
+		widget.NewButton("Branches", func() {
+			contentWrapper.Objects = []fyne.CanvasObject{branchTab}
+			contentWrapper.Refresh()
+		}),
+		widget.NewButton("Remote", func() {
+			contentWrapper.Objects = []fyne.CanvasObject{remoteTab}
+			contentWrapper.Refresh()
+		}),
+		widget.NewButton("History", func() {
+			contentWrapper.Objects = []fyne.CanvasObject{historyTab}
+			contentWrapper.Refresh()
+		}),
+		widget.NewButton("Changes", func() {
+			contentWrapper.Objects = []fyne.CanvasObject{changesTab}
+			contentWrapper.Refresh()
+		}),
+		widget.NewButton("Advanced", func() {
+			contentWrapper.Objects = []fyne.CanvasObject{advancedTab}
+			contentWrapper.Refresh()
+		}),
+		widget.NewButton("Tools", func() {
+			contentWrapper.Objects = []fyne.CanvasObject{toolsTab}
+			contentWrapper.Refresh()
+		}),
+		layout.NewSpacer(),
+	)
 
-	cloneBtn := CloneButton(w)
-	cloneBtn.Resize(fyne.NewSize(100, 40))
-	cloneBtn.Move(fyne.NewPos(220, 350))
+	// Sidebar with header
+	sidebarHeader := widget.NewLabel("Categories")
+	sidebarHeader.TextStyle = fyne.TextStyle{Bold: true}
+	sidebar := container.NewVBox(
+		sidebarHeader,
+		categories,
+	)
 
-	Branchbtn := BranchButton(w)
-	Branchbtn.Resize(fyne.NewSize(100, 40))
-	Branchbtn.Move(fyne.NewPos(329, 350))
+	// Top bar
+	topBar := container.NewHBox(
+		widget.NewLabel("GitScope Dashboard"),
+		layout.NewSpacer(),
+		widget.NewButton("Clear Console", func() {
+			output.SetText("")
+		}),
+	)
 
-	PullBtn := PullButton(w)
-	PullBtn.Resize(fyne.NewSize(100, 40))
-	PullBtn.Move(fyne.NewPos(439, 350))
+	// Bottom console
+	consoleHeader := container.NewHBox(
+		widget.NewLabel("Console Output"),
+		layout.NewSpacer(),
+	)
 
-	Reflogbtn := ReflogButton(w, output)
-	Reflogbtn.Resize(fyne.NewSize(100, 40))
-	Reflogbtn.Move(fyne.NewPos(1, 450))
+	consolePanel := container.NewBorder(
+		consoleHeader,
+		nil, nil, nil,
+		output,
+	)
 
-	SwitchBranchBtn := SwitchBranchButton(w)
-	SwitchBranchBtn.Resize(fyne.NewSize(100, 40))
-	SwitchBranchBtn.Move(fyne.NewPos(110, 450))
+	// Main split: sidebar + content + output
+	leftPanel := container.NewVBox(topBar, container.NewBorder(nil, nil, sidebar, nil, contentWrapper))
 
-	BranchRenameBtn := BranchRenameButton(w, output)
-	BranchRenameBtn.Resize(fyne.NewSize(100, 40))
-	BranchRenameBtn.Move(fyne.NewPos(220, 450))
-
-	GitIgnoreBtn := GitIgnoreButton(output, w)
-	GitIgnoreBtn.Resize(fyne.NewSize(110, 40))
-	GitIgnoreBtn.Move(fyne.NewPos(510, 195))
-
-	GitRemotebtn := RemoteButton(w, output)
-	GitRemotebtn.Resize(fyne.NewSize(100, 40))
-	GitRemotebtn.Move(fyne.NewPos(329, 450))
-
-	Diffbtn := DiffButton(output)
-	Diffbtn.Resize(fyne.NewSize(100, 40))
-	Diffbtn.Move(fyne.NewPos(439, 450))
-
-	Resetbtn := ResetButton(output, w)
-	Resetbtn.Resize(fyne.NewSize(100, 40))
-	Resetbtn.Move(fyne.NewPos(1, 550))
-
-	return container.NewWithoutLayout(initBtn, stageBtn, commitBtn, statusBtn, pushBtn, logBtn, revertBtn, cloneBtn, Branchbtn, PullBtn, clearBtn, Reflogbtn, SwitchBranchBtn, BranchRenameBtn, GitIgnoreBtn, GitRemotebtn, Diffbtn, Resetbtn, output)
+	return container.NewBorder(
+		nil,
+		consolePanel,
+		nil, nil,
+		leftPanel,
+	)
 }
 func InitButton(output *widget.Entry) *widget.Button {
 	return widget.NewButton("Init", func() {
@@ -167,20 +227,25 @@ func InitButton(output *widget.Entry) *widget.Button {
 	})
 }
 
-func StatusButton(output *widget.Entry) *widget.Button {
-	return widget.NewButton("Status", func() {
-		out, err := git.Status()
+func StatusButton(output *widget.Entry) fyne.CanvasObject {
+	options := []string{"Standard", "Short (-s)", "Branch (-b)"}
+	statusSelect := widget.NewSelect(options, func(value string) {})
+	statusSelect.SetSelected("Standard")
+
+	statusBtn := widget.NewButton("Status", func() {
+		out, err := git.Status(statusSelect.Selected)
 		if err != nil {
 			output.SetText("error: " + err.Error())
 		} else {
 			output.SetText(out)
 		}
 	})
+	return container.NewVBox(statusBtn, statusSelect)
 }
 
 func StageButton(output *widget.Entry) *widget.Button {
 	return widget.NewButton("Stage", func() {
-		out, err := git.Stage()
+		out, err := git.Stage("All (.)")
 		if err != nil {
 			output.SetText("error: " + err.Error())
 		} else {
@@ -189,9 +254,12 @@ func StageButton(output *widget.Entry) *widget.Button {
 	})
 }
 
-func CommitButton(w fyne.Window) *widget.Button {
+func CommitButton(w fyne.Window) fyne.CanvasObject {
+	options := []string{"Standard (-m)", "Stage All (-a)", "Amend (--amend)"}
+	commitSelect := widget.NewSelect(options, func(value string) {})
+	commitSelect.SetSelected("Standard (-m)")
 
-	return widget.NewButton("Commit", func() {
+	commitBtn := widget.NewButton("Commit", func() {
 		repo := state.RepoPath
 		checkdir, err := os.Stat(repo)
 		if err != nil || !checkdir.IsDir() {
@@ -209,7 +277,7 @@ func CommitButton(w fyne.Window) *widget.Button {
 					dialog.ShowInformation("Empty Message", "Commit message cannot be empty", w)
 					return
 				}
-				out, err := git.Commit(msg)
+				out, err := git.Commit(msg, commitSelect.Selected)
 				if err != nil {
 					dialog.ShowError(err, w)
 				} else {
@@ -218,6 +286,7 @@ func CommitButton(w fyne.Window) *widget.Button {
 			}
 		}, w)
 	})
+	return container.NewVBox(commitBtn, commitSelect)
 }
 
 func PushButton(w fyne.Window) fyne.CanvasObject {
@@ -308,15 +377,20 @@ func PushButton(w fyne.Window) fyne.CanvasObject {
 
 	return container.NewVBox(pushBtn, branchSelectorUI)
 }
-func LogButton(output *widget.Entry) *widget.Button {
-	return widget.NewButton("Log", func() {
-		out, err := git.Log(state.RepoPath)
+func LogButton(output *widget.Entry) fyne.CanvasObject {
+	options := []string{"Oneline", "Graph", "Pretty"}
+	logSelect := widget.NewSelect(options, func(value string) {})
+	logSelect.SetSelected("Oneline")
+
+	logBtn := widget.NewButton("Log", func() {
+		out, err := git.Log(state.RepoPath, logSelect.Selected)
 		if err != nil {
 			output.SetText("error: " + err.Error())
 		} else {
 			output.SetText(out)
 		}
 	})
+	return container.NewVBox(logBtn, logSelect)
 }
 func RevertButton(w fyne.Window) *widget.Button {
 
@@ -344,7 +418,7 @@ func RevertButton(w fyne.Window) *widget.Button {
 				return
 			}
 
-			out, err := git.Revert(sha)
+			out, err := git.Revert(sha, "--no-edit")
 			if err != nil {
 				dialog.ShowError(err, w)
 				return
@@ -481,7 +555,7 @@ func PullButton(w fyne.Window) fyne.CanvasObject {
 						return
 					}
 
-					git.Stage()
+					git.Stage("All (.)")
 				}
 
 				output, err := git.Pull(state.RepoPath, branch)
@@ -530,7 +604,7 @@ func SettingPage(w fyne.Window) fyne.CanvasObject {
 
 	f1 := widget.NewLabel("GitScope is a modern, lightweight, and visually intuitive Git client built with Go and Fyne. It simplifies essential")
 	f2 := widget.NewLabel("version control operations making Git easier to use for both beginners and experienced developers.")
-	f3 := widget.NewLabel("Version: 1.1.3")
+	f3 := widget.NewLabel("Version: 1.0.0")
 	f4 := widget.NewLabel("Developer: Aswanidev VS")
 
 	link := widget.NewHyperlink("🔗 View Project on GitHub", &url.URL{
@@ -559,7 +633,7 @@ func ReflogButton(w fyne.Window, output *widget.Entry) *widget.Button {
 			dialog.ShowInformation("Repository Not Selected", "Cannot show the reflog because no Git repository has been selected. Please choose a repository and try again.", w)
 			return
 		}
-		out, err := git.Reflog(state.RepoPath)
+		out, err := git.Reflog(state.RepoPath, "Standard")
 		if err != nil {
 			output.SetText("error: " + err.Error())
 		} else {
@@ -666,7 +740,7 @@ func GitIgnoreButton(output *widget.Entry, w fyne.Window) *widget.Button {
 }
 func DocumentPage(w fyne.Window) fyne.CanvasObject {
 
-	items := []string{"Init", "Stage", "Status", "Commit", "Push", "Log", "Revert", "Clone", "Branch", "Pull", "Reflog", "GitIgnore", "Remote", "Diff", "Reset"}
+	items := []string{"Init", "Stage", "Status", "Commit", "Push", "Log", "Revert", "Clone", "Branch", "Pull", "Reflog", "GitIgnore", "Remote", "Diff", "Reset", "Fetch", "Stash", "Merge", "Tag", "Cherry-pick", "Rebase", "Clean", "Show", "Ls-files", "Worktree", "Shortlog", "Blame"}
 
 	masterContainer := container.NewStack()
 
@@ -770,17 +844,44 @@ func RemoteButton(w fyne.Window, output *widget.Entry) fyne.CanvasObject {
 
 			cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
 		case "add":
+			nameEntry := widget.NewEntry()
+			nameEntry.SetPlaceHolder("Remote Name")
 			urlEntry := widget.NewEntry()
 			urlEntry.SetPlaceHolder("Remote URL")
 
 			formItems := []*widget.FormItem{
-
+				widget.NewFormItem("", nameEntry),
 				widget.NewFormItem("", urlEntry),
 			}
 
+			// dialog.ShowForm("Add Remote", "Add", "Cancel", formItems, func(ok bool) {
+			// 	if ok {
+			// 		result, err := git.GitRemote("add", urlEntry.Text)
+			// 		if err != nil {
+			// 			output.SetText(fmt.Sprintf("Error: %v\n%s", err, result))
+			// 		} else {
+			// 			output.SetText(result)
+			// 		}
+			// 	}
+			// }, w)
 			dialog.ShowForm("Add Remote", "Add", "Cancel", formItems, func(ok bool) {
 				if ok {
-					result, err := git.GitRemote("add", urlEntry.Text)
+					name := strings.TrimSpace(nameEntry.Text)
+					remoteURL := strings.TrimSpace(urlEntry.Text)
+
+					// Validate both fields are filled
+					if name == "" {
+						output.SetText("Error: Remote name cannot be empty")
+						return
+					}
+					if remoteURL == "" {
+						output.SetText("Error: Remote URL cannot be empty")
+						return
+					}
+
+					// Combine name and URL
+					input := name + " " + remoteURL
+					result, err := git.GitRemote("add", input)
 					if err != nil {
 						output.SetText(fmt.Sprintf("Error: %v\n%s", err, result))
 					} else {
@@ -799,22 +900,356 @@ func RemoteButton(w fyne.Window, output *widget.Entry) fyne.CanvasObject {
 		actionSelect,
 	)
 }
-func DiffButton(output *widget.Entry) *widget.Button {
-	return widget.NewButton("Diff", func() {
-		out, err := git.Diff()
+func DiffButton(output *widget.Entry) fyne.CanvasObject {
+	options := []string{"Unstaged", "Staged (--cached)", "Names (--name-only)", "Summary (--stat)"}
+	diffSelect := widget.NewSelect(options, func(value string) {})
+	diffSelect.SetSelected("Unstaged")
+
+	diffBtn := widget.NewButton("Diff", func() {
+		out, err := git.Diff(diffSelect.Selected)
 		if err != nil {
 			output.SetText("error: " + err.Error())
 		} else {
 			output.SetText(out)
 		}
 	})
+	return container.NewVBox(diffBtn, diffSelect)
 }
-func ResetButton(output *widget.Entry, w fyne.Window) *widget.Button {
-	return widget.NewButton("Reset", func() {
-		dialog.ShowConfirm("Reset", "Are you sure you want to proceed?",
-			func(response bool) {
-				if response {
-					out, err := git.Reset()
+func ResetButton(output *widget.Entry, w fyne.Window) fyne.CanvasObject {
+	options := []string{"--mixed", "--soft", "--hard"}
+	resetSelect := widget.NewSelect(options, func(value string) {})
+	resetSelect.SetSelected("--mixed")
+
+	resetBtn := widget.NewButton("Reset", func() {
+		input := widget.NewEntry()
+		input.SetText("HEAD~1")
+		input.SetPlaceHolder("e.g. HEAD~1 or hash")
+
+		form := []*widget.FormItem{
+			{Text: "Commit Hash", Widget: input},
+		}
+
+		dialog.ShowForm("Git Reset", "Reset", "Cancel", form, func(valid bool) {
+			if !valid {
+				return
+			}
+
+			target := strings.TrimSpace(input.Text)
+			if target == "" {
+				dialog.ShowInformation("Invalid Hash", "Please provide a valid commit hash or reference (like HEAD~1).", w)
+				return
+			}
+
+			mode := resetSelect.Selected
+			dialog.ShowConfirm("Confirm Reset",
+				fmt.Sprintf("Are you sure you want to proceed with %s reset to %s?", mode, target),
+				func(response bool) {
+					if response {
+						out, err := git.Reset(mode, target)
+						if err != nil {
+							output.SetText("error: " + err.Error())
+						} else {
+							output.SetText(out)
+						}
+					}
+				}, w)
+		}, w)
+	})
+	return container.NewVBox(resetBtn, resetSelect)
+}
+
+func MagicSyncButton(output *widget.Entry) *widget.Button {
+	return widget.NewButton("Magic Sync", func() {
+		if state.RepoPath == "" {
+			output.SetText("Error: No repository selected.")
+			return
+		}
+		if _, err := os.Stat(state.RepoPath); os.IsNotExist(err) {
+			output.SetText("Error: Repository path does not exist.")
+			return
+		}
+
+		output.SetText("Starting Magic Sync...")
+		out, err := git.MagicSync()
+		if err != nil {
+			output.SetText(out + "\n\nError: " + err.Error())
+		} else {
+			output.SetText(out + "\n\nMagic Sync completed successfully!")
+		}
+	})
+}
+
+func UndoButton(output *widget.Entry, w fyne.Window) *widget.Button {
+	return widget.NewButton("Undo", func() {
+		if state.RepoPath == "" {
+			dialog.ShowInformation("Repository Not Selected", "Please select a repository first.", w)
+			return
+		}
+		if _, err := os.Stat(state.RepoPath); os.IsNotExist(err) {
+			dialog.ShowError(errors.New("Repository path does not exist"), w)
+			return
+		}
+
+		dialog.ShowConfirm("Undo Last Commit", "Are you sure you want to undo the last commit? Changes will remain staged.", func(confirm bool) {
+			if confirm {
+				out, err := git.UndoLastCommit()
+				if err != nil {
+					output.SetText("error: " + err.Error())
+				} else {
+					output.SetText(out)
+				}
+			}
+		}, w)
+	})
+}
+
+func CherryPickButton(output *widget.Entry, w fyne.Window) *widget.Button {
+	return widget.NewButton("Cherry-pick", func() {
+		if state.RepoPath == "" {
+			dialog.ShowInformation("Repository Not Selected", "Please select a repository first.", w)
+			return
+		}
+		if _, err := os.Stat(state.RepoPath); os.IsNotExist(err) {
+			dialog.ShowError(errors.New("Repository path does not exist"), w)
+			return
+		}
+
+		input := widget.NewEntry()
+		input.SetPlaceHolder("Enter commit hash")
+		form := []*widget.FormItem{
+			{Text: "Hash", Widget: input},
+		}
+		dialog.ShowForm("Cherry-pick Commit", "Apply", "Cancel", form, func(valid bool) {
+			if valid {
+				hash := strings.TrimSpace(input.Text)
+				if hash == "" {
+					return
+				}
+				out, err := git.CherryPick(hash)
+				if err != nil {
+					output.SetText("error: " + err.Error())
+				} else {
+					output.SetText("Cherry-pick result:\n" + out)
+				}
+			}
+		}, w)
+	})
+}
+
+func ConflictButton(output *widget.Entry, w fyne.Window) *widget.Button {
+	return widget.NewButton("Conflicts", func() {
+		if state.RepoPath == "" {
+			dialog.ShowInformation("Repository Not Selected", "Please select a repository first.", w)
+			return
+		}
+		if _, err := os.Stat(state.RepoPath); os.IsNotExist(err) {
+			dialog.ShowError(errors.New("Repository path does not exist"), w)
+			return
+		}
+
+		conflicts, err := git.GetConflicts()
+		if err != nil {
+			output.SetText("error fetching conflicts: " + err.Error())
+			return
+		}
+		if len(conflicts) == 0 {
+			dialog.ShowInformation("No Conflicts", "No merge conflicts detected.", w)
+			return
+		}
+
+		content := container.NewVBox()
+		for _, file := range conflicts {
+			f := file // capture for closure
+			row := container.NewHBox(
+				widget.NewLabel(f),
+				layout.NewSpacer(),
+				widget.NewButton("Keep Mine", func() {
+					out, err := git.ResolveConflict(f, "ours")
+					if err != nil {
+						output.SetText("error: " + err.Error())
+					} else {
+						output.SetText(out)
+						dialog.ShowInformation("Resolved", "Resolved "+f+" with 'ours'", w)
+					}
+				}),
+				widget.NewButton("Take Theirs", func() {
+					out, err := git.ResolveConflict(f, "theirs")
+					if err != nil {
+						output.SetText("error: " + err.Error())
+					} else {
+						output.SetText(out)
+						dialog.ShowInformation("Resolved", "Resolved "+f+" with 'theirs'", w)
+					}
+				}),
+			)
+			content.Add(row)
+		}
+
+		scroll := container.NewVScroll(content)
+		scroll.SetMinSize(fyne.NewSize(400, 300))
+		dialog.ShowCustom("Resolve Conflicts", "Close", scroll, w)
+	})
+}
+
+func TagButton(output *widget.Entry, w fyne.Window) fyne.CanvasObject {
+	actions := []string{"List", "Create", "Push", "Delete"}
+	tagSelect := widget.NewSelect(actions, func(value string) {})
+	tagSelect.SetSelected("List")
+
+	tagBtn := widget.NewButton("Tag", func() {
+		if state.RepoPath == "" {
+			dialog.ShowInformation("Repository Not Selected", "Please select a repository first.", w)
+			return
+		}
+		if _, err := os.Stat(state.RepoPath); os.IsNotExist(err) {
+			dialog.ShowError(errors.New("Repository path does not exist"), w)
+			return
+		}
+
+		action := strings.ToLower(tagSelect.Selected)
+
+		if action == "list" {
+			out, err := git.Tag(state.RepoPath, "list", "")
+			if err != nil {
+				output.SetText("error: " + err.Error())
+			} else {
+				output.SetText(out)
+			}
+			return
+		}
+
+		// Create, Push, Delete need a tag name
+		tagNameEntry := widget.NewEntry()
+		tagNameEntry.SetPlaceHolder("Enter tag name")
+		form := []*widget.FormItem{
+			{Text: "Tag Name", Widget: tagNameEntry},
+		}
+
+		dialogTitle := fmt.Sprintf("Git Tag: %s", tagSelect.Selected)
+		dialog.ShowForm(dialogTitle, tagSelect.Selected, "Cancel", form, func(valid bool) {
+			if valid {
+				name := strings.TrimSpace(tagNameEntry.Text)
+				if name == "" {
+					return
+				}
+				out, err := git.Tag(state.RepoPath, action, name)
+				if err != nil {
+					output.SetText("error: " + err.Error())
+				} else {
+					output.SetText(out)
+				}
+			}
+		}, w)
+	})
+
+	return container.NewVBox(tagBtn, tagSelect)
+}
+
+func FetchButton(output *widget.Entry, w fyne.Window) fyne.CanvasObject {
+	options := []string{"Default", "All (--all)"}
+	fetchSelect := widget.NewSelect(options, func(value string) {})
+	fetchSelect.SetSelected("Default")
+
+	fetchBtn := widget.NewButton("Fetch", func() {
+		if state.RepoPath == "" {
+			dialog.ShowInformation("Repository Not Selected", "Please select a repository first.", w)
+			return
+		}
+		if _, err := os.Stat(state.RepoPath); os.IsNotExist(err) {
+			dialog.ShowError(errors.New("Repository path does not exist"), w)
+			return
+		}
+
+		out, err := git.Fetch(state.RepoPath, fetchSelect.Selected)
+		if err != nil {
+			output.SetText("error: " + err.Error())
+		} else {
+			output.SetText(out)
+		}
+	})
+
+	return container.NewVBox(fetchBtn, fetchSelect)
+}
+
+func StashButton(output *widget.Entry, w fyne.Window) fyne.CanvasObject {
+	options := []string{"Save", "Pop", "List", "Drop", "Apply"}
+	stashSelect := widget.NewSelect(options, func(value string) {})
+	stashSelect.SetSelected("Save")
+
+	stashBtn := widget.NewButton("Stash", func() {
+		if state.RepoPath == "" {
+			dialog.ShowInformation("Repository Not Selected", "Please select a repository first.", w)
+			return
+		}
+		if _, err := os.Stat(state.RepoPath); os.IsNotExist(err) {
+			dialog.ShowError(errors.New("Repository path does not exist"), w)
+			return
+		}
+
+		action := strings.ToLower(stashSelect.Selected)
+		out, err := git.Stash(state.RepoPath, action)
+		if err != nil {
+			output.SetText("error: " + err.Error())
+		} else {
+			output.SetText(out)
+		}
+	})
+
+	return container.NewVBox(stashBtn, stashSelect)
+}
+
+func MergeButton(output *widget.Entry, w fyne.Window) fyne.CanvasObject {
+	items, getSelected := helpers.BranchSelector(state.RepoPath, w)
+
+	mergeBtn := widget.NewButton("Merge", func() {
+		if state.RepoPath == "" {
+			dialog.ShowInformation("Repository Not Selected", "Please select a repository first.", w)
+			return
+		}
+		if _, err := os.Stat(state.RepoPath); os.IsNotExist(err) {
+			dialog.ShowError(errors.New("Repository path does not exist"), w)
+			return
+		}
+
+		branch := getSelected()
+		if branch == "" {
+			dialog.ShowError(errors.New("Please select a branch to merge"), w)
+			return
+		}
+
+		dialog.ShowConfirm("Confirm Merge", fmt.Sprintf("Are you sure you want to merge '%s' into current branch?", branch), func(confirm bool) {
+			if confirm {
+				out, err := git.Merge(state.RepoPath, branch)
+				if err != nil {
+					output.SetText("error: " + err.Error())
+				} else {
+					output.SetText(out)
+				}
+			}
+		}, w)
+	})
+
+	return container.NewVBox(mergeBtn, items)
+}
+
+func ShowButton(output *widget.Entry, w fyne.Window) fyne.CanvasObject {
+	options := []string{"Head", "Last 5", "Specific"}
+	showSelect := widget.NewSelect(options, func(value string) {})
+	showSelect.SetSelected("Head")
+
+	showBtn := widget.NewButton("Show", func() {
+		if state.RepoPath == "" {
+			dialog.ShowInformation("Repository Not Selected", "Please select a repository first.", w)
+			return
+		}
+		target := ""
+		if showSelect.Selected == "Specific" {
+			input := widget.NewEntry()
+			input.SetPlaceHolder("Commit hash")
+			dialog.ShowForm("Show Commit", "Show", "Cancel", []*widget.FormItem{{Text: "Hash", Widget: input}}, func(valid bool) {
+				if valid {
+					target = input.Text
+					out, err := git.Show(state.RepoPath, "Full", target)
 					if err != nil {
 						output.SetText("error: " + err.Error())
 					} else {
@@ -822,5 +1257,222 @@ func ResetButton(output *widget.Entry, w fyne.Window) *widget.Button {
 					}
 				}
 			}, w)
+			return
+		}
+		out, err := git.Show(state.RepoPath, showSelect.Selected, target)
+		if err != nil {
+			output.SetText("error: " + err.Error())
+		} else {
+			output.SetText(out)
+		}
 	})
+	return container.NewVBox(showBtn, showSelect)
+}
+
+func LsFilesButton(output *widget.Entry, w fyne.Window) fyne.CanvasObject {
+	options := []string{"Staged", "Tracked", "Untracked", "Modified", "Cached"}
+	lsSelect := widget.NewSelect(options, func(value string) {})
+	lsSelect.SetSelected("Tracked")
+
+	lsBtn := widget.NewButton("Ls-Files", func() {
+		if state.RepoPath == "" {
+			dialog.ShowInformation("Repository Not Selected", "Please select a repository first.", w)
+			return
+		}
+		opt := map[string]string{
+			"Staged":    "--cached",
+			"Tracked":   "",
+			"Untracked": "--others --exclude-standard",
+			"Modified":  "--modified",
+			"Cached":    "--stage",
+		}
+		val, ok := opt[lsSelect.Selected]
+		if !ok {
+			val = ""
+		}
+		out, err := git.LsFiles(state.RepoPath, val)
+		if err != nil {
+			output.SetText("error: " + err.Error())
+		} else {
+			output.SetText(out)
+		}
+	})
+	return container.NewVBox(lsBtn, lsSelect)
+}
+
+func CleanButton(output *widget.Entry, w fyne.Window) fyne.CanvasObject {
+	options := []string{"Preview (-n)", "Remove Dir (-d)", "Force (-f)", "Full (-fdx)"}
+	cleanSelect := widget.NewSelect(options, func(value string) {})
+	cleanSelect.SetSelected("Preview (-n)")
+
+	cleanBtn := widget.NewButton("Clean", func() {
+		if state.RepoPath == "" {
+			dialog.ShowInformation("Repository Not Selected", "Please select a repository first.", w)
+			return
+		}
+		val := map[string]string{
+			"Preview (-n)": "Dry Run (-n)",
+			"Remove Dir (-d)": "Directories (-d)",
+			"Force (-f)": "Force (-f)",
+			"Full (-fdx)": "Full (-fdx)",
+		}[cleanSelect.Selected]
+		if cleanSelect.Selected == "Preview (-n)" {
+			dialog.ShowConfirm("Preview Clean", "This will show what would be deleted without removing anything.", func(ok bool) {
+				if ok {
+					out, err := git.Clean(state.RepoPath, val)
+					output.SetText(out)
+					if err != nil {
+						output.SetText("error: " + err.Error())
+					}
+				}
+			}, w)
+			return
+		}
+		dialog.ShowConfirm("Confirm Clean", "This will remove untracked files permanently!", func(ok bool) {
+			if ok {
+				out, err := git.Clean(state.RepoPath, val)
+				if err != nil {
+					output.SetText("error: " + err.Error())
+				} else {
+					output.SetText(out)
+				}
+			}
+		}, w)
+	})
+	return container.NewVBox(cleanBtn, cleanSelect)
+}
+
+func RenameButton(output *widget.Entry, w fyne.Window) fyne.CanvasObject {
+	renameBtn := widget.NewButton("Rename", func() {
+		if state.RepoPath == "" {
+			dialog.ShowInformation("Repository Not Selected", "Please select a repository first.", w)
+			return
+		}
+		BranchRenameButton(w, output).Tapped(nil)
+	})
+	return renameBtn
+}
+
+func ShortlogButton(output *widget.Entry, w fyne.Window) fyne.CanvasObject {
+	options := []string{"Default", "Summary (-s)", "By Email (-e)", "Numeric (-n)"}
+	shortSelect := widget.NewSelect(options, func(value string) {})
+	shortSelect.SetSelected("Default")
+
+	shortBtn := widget.NewButton("Shortlog", func() {
+		if state.RepoPath == "" {
+			dialog.ShowInformation("Repository Not Selected", "Please select a repository first.", w)
+			return
+		}
+		val := map[string]string{
+			"Default":     "",
+			"Summary (-s)": "Summary (-s)",
+			"By Email (-e)": "By email (-e)",
+			"Numeric (-n)": "Numeric (-n)",
+		}[shortSelect.Selected]
+		out, err := git.Shortlog(state.RepoPath, val)
+		if err != nil {
+			output.SetText("error: " + err.Error())
+		} else {
+			output.SetText(out)
+		}
+	})
+	return container.NewVBox(shortBtn, shortSelect)
+}
+
+func BlameButton(output *widget.Entry, w fyne.Window) fyne.CanvasObject {
+	blameBtn := widget.NewButton("Blame", func() {
+		if state.RepoPath == "" {
+			dialog.ShowInformation("Repository Not Selected", "Please select a repository first.", w)
+			return
+		}
+		input := widget.NewEntry()
+		input.SetPlaceHolder("file path")
+		dialog.ShowForm("Blame File", "Blame", "Cancel", []*widget.FormItem{{Text: "File", Widget: input}}, func(valid bool) {
+			if valid && input.Text != "" {
+				out, err := git.Blame(state.RepoPath, input.Text)
+				if err != nil {
+					output.SetText("error: " + err.Error())
+				} else {
+					output.SetText(out)
+				}
+			}
+		}, w)
+	})
+	return blameBtn
+}
+
+func RebaseButton(output *widget.Entry, w fyne.Window) fyne.CanvasObject {
+	options := []string{"Interactive (-i)", "Onto", "Continue", "Abort", "Skip"}
+	rebaseSelect := widget.NewSelect(options, func(value string) {})
+	rebaseSelect.SetSelected("Interactive (-i)")
+
+	rebaseBtn := widget.NewButton("Rebase", func() {
+		if state.RepoPath == "" {
+			dialog.ShowInformation("Repository Not Selected", "Please select a repository first.", w)
+			return
+		}
+		action := rebaseSelect.Selected
+		if action == "Continue" || action == "Abort" || action == "Skip" {
+			out, err := git.Rebase(state.RepoPath, action, "")
+			if err != nil {
+				output.SetText("error: " + err.Error())
+			} else {
+				output.SetText(out)
+			}
+			return
+		}
+		input := widget.NewEntry()
+		input.SetPlaceHolder("target branch or commit")
+		dialog.ShowForm("Git Rebase", "Rebase", "Cancel", []*widget.FormItem{{Text: "Target", Widget: input}}, func(valid bool) {
+			if valid {
+				out, err := git.Rebase(state.RepoPath, action, input.Text)
+				if err != nil {
+					output.SetText("error: " + err.Error())
+				} else {
+					output.SetText(out)
+				}
+			}
+		}, w)
+	})
+	return container.NewVBox(rebaseBtn, rebaseSelect)
+}
+
+func WorktreeButton(output *widget.Entry, w fyne.Window) fyne.CanvasObject {
+	options := []string{"List", "Add", "Remove", "Prune"}
+	wtSelect := widget.NewSelect(options, func(value string) {})
+	wtSelect.SetSelected("List")
+
+	wtBtn := widget.NewButton("Worktree", func() {
+		if state.RepoPath == "" {
+			dialog.ShowInformation("Repository Not Selected", "Please select a repository first.", w)
+			return
+		}
+		action := strings.ToLower(wtSelect.Selected)
+		if action == "add" || action == "remove" {
+			input := widget.NewEntry()
+			placehold := "path new-branch" + string(rune(0xa7)) + "path"
+			if action == "remove" {
+				placehold = "worktree name/path"
+			}
+			input.SetPlaceHolder(placehold)
+			dialog.ShowForm("Worktree "+wtSelect.Selected, "Run", "Cancel", []*widget.FormItem{{Text: "Args", Widget: input}}, func(valid bool) {
+				if valid {
+					out, err := git.Worktree(state.RepoPath, action, input.Text)
+					if err != nil {
+						output.SetText("error: " + err.Error())
+					} else {
+						output.SetText(out)
+					}
+				}
+			}, w)
+			return
+		}
+		out, err := git.Worktree(state.RepoPath, action, "")
+		if err != nil {
+			output.SetText("error: " + err.Error())
+		} else {
+			output.SetText(out)
+		}
+	})
+	return container.NewVBox(wtBtn, wtSelect)
 }
