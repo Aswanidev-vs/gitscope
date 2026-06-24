@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <title>GitScope - Console Test</title>
+    <style>
+        body { font-family: monospace; background: #0c0f14; color: #dfe3ea; padding: 20px; }
+        h2 { color: #3dbda0; margin-bottom: 12px; }
+        .test-section { margin-bottom: 20px; border: 1px solid #323d52; padding: 16px; border-radius: 6px; }
+        .pass { color: #4dba7a; }
+        .fail { color: #d9534f; }
+        .info { color: #8892a4; }
+        button { background: #3dbda0; color: #0c0f14; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; margin: 4px; font-family: monospace; font-weight: 600; }
+        button:hover { background: #52d4b8; }
+        #consoleOutput { background: #12161e; border: 1px solid #252d3d; padding: 12px; min-height: 100px; max-height: 300px; overflow-y: auto; white-space: pre-wrap; font-size: 12px; line-height: 1.6; border-radius: 4px; }
+        #results { margin-top: 12px; }
+        .result-line { padding: 4px 0; border-bottom: 1px solid #1e2430; }
+    </style>
+</head>
+<body>
+    <h2>GitScope Console Output Tests</h2>
+
+    <div class="test-section">
+        <h3>Test 1: Console Buffer Append</h3>
+        <button onclick="testBufferAppend()">Run</button>
+        <div id="test1-result" class="info">Not run</div>
+    </div>
+
+    <div class="test-section">
+        <h3>Test 2: Console DOM Update</h3>
+        <button onclick="testDomUpdate()">Run</button>
+        <div id="test2-result" class="info">Not run</div>
+    </div>
+
+    <div class="test-section">
+        <h3>Test 3: Console Log Types (success/error/warning)</h3>
+        <button onclick="testLogTypes()">Run</button>
+        <div id="test3-result" class="info">Not run</div>
+    </div>
+
+    <div class="test-section">
+        <h3>Test 4: Icon Function with Size</h3>
+        <button onclick="testIconSize()">Run</button>
+        <div id="test4-result" class="info">Not run</div>
+    </div>
+
+    <div class="test-section">
+        <h3>Test 5: Toast Creation</h3>
+        <button onclick="testToast()">Run</button>
+        <div id="test5-result" class="info">Not run</div>
+    </div>
+
+    <div class="test-section">
+        <h3>Test 6: RunGitCmd Simulation</h3>
+        <button onclick="testRunGitCmd()">Run</button>
+        <div id="test6-result" class="info">Not run</div>
+    </div>
+
+    <h3>Console Output</h3>
+    <div id="consoleOutput">Ready.</div>
+
+    <div class="toast-container" id="toastContainer"></div>
+
+    <h3>Test Results</h3>
+    <div id="results"></div>
+
+    <script type="module">
+        import { icon } from './src/icons.js';
+
+        let consoleBuffer = '';
+        let passed = 0;
+        let failed = 0;
+
+        function logResult(testId, testName, success, detail) {
+            const el = document.getElementById(testId);
+            const rEl = document.getElementById('results');
+            if (el) {
+                el.textContent = (success ? 'PASS' : 'FAIL') + ': ' + detail;
+                el.className = success ? 'pass' : 'fail';
+            }
+            const line = document.createElement('div');
+            line.className = 'result-line ' + (success ? 'pass' : 'fail');
+            line.textContent = testName + ' - ' + detail;
+            rEl.appendChild(line);
+            if (success) passed++; else failed++;
+        }
+
+        function consoleLog(msg, type) {
+            const el = document.getElementById('consoleOutput');
+            if (!el) return;
+            const prefixes = { error: '[err] ', success: '[ok] ', warning: '[warn] ' };
+            const line = (prefixes[type] || '') + msg;
+            consoleBuffer += line + '\n';
+            el.textContent = consoleBuffer;
+            el.scrollTop = el.scrollHeight;
+        }
+
+        function clearConsole() {
+            consoleBuffer = '';
+            const el = document.getElementById('consoleOutput');
+            if (el) el.textContent = '';
+        }
+
+        function showToast(msg, type) {
+            const container = document.getElementById('toastContainer');
+            if (!container) return;
+            const toastIconMap = { error: 'xCircle', success: 'check', warning: 'warn', info: 'code' };
+            const toast = document.createElement('div');
+            toast.style.cssText = 'padding:10px 14px;margin:4px 0;border-radius:6px;background:#1a1f2b;border:1px solid #323d52;color:#dfe3ea;font-size:12px;font-family:monospace;';
+            toast.textContent = (type || 'info').toUpperCase() + ': ' + msg;
+            container.appendChild(toast);
+            setTimeout(() => toast.remove(), 2000);
+        }
+
+        function setConsoleBusy(busy) {}
+
+        async function runGitCmd(fn, ...args) {
+            consoleLog('Running ' + fn.name + '...');
+            setConsoleBusy(true);
+            try {
+                const result = await fn(...args);
+                const output = (typeof result === 'string' ? result.trim() : '') || fn.name + ' completed.';
+                consoleLog(output, 'success');
+            } catch (err) {
+                const errMsg = (err && err.message) ? err.message : String(err);
+                consoleLog(fn.name + ' failed: ' + errMsg, 'error');
+            }
+            setConsoleBusy(false);
+        }
+
+        async function mockStatus(option) {
+            return 'On branch main\nnothing to commit, working tree clean';
+        }
+
+        async function mockFailingCmd() {
+            throw new Error('command failed: exit status 1');
+        }
+
+        async function mockEmptyCmd() {
+            return '';
+        }
+
+        // Test 1: Buffer append
+        window.testBufferAppend = function() {
+            clearConsole();
+            consoleBuffer = '';
+            consoleLog('line one');
+            consoleLog('line two');
+            consoleLog('line three');
+            const hasThree = consoleBuffer.split('\n').filter(l => l).length === 3;
+            logResult('test1-result', 'Buffer Append', hasThree, hasThree ? '3 lines in buffer' : 'Expected 3 lines, got ' + consoleBuffer.split('\n').filter(l => l).length);
+        };
+
+        // Test 2: DOM update
+        window.testDomUpdate = function() {
+            clearConsole();
+            consoleLog('test dom content');
+            const el = document.getElementById('consoleOutput');
+            const hasContent = el && el.textContent.includes('test dom content');
+            logResult('test2-result', 'DOM Update', hasContent, hasContent ? 'Content visible in DOM' : 'DOM not updated');
+        };
+
+        // Test 3: Log types
+        window.testLogTypes = function() {
+            clearConsole();
+            consoleLog('success msg', 'success');
+            consoleLog('error msg', 'error');
+            consoleLog('warning msg', 'warning');
+            const hasSuccess = consoleBuffer.includes('[ok]');
+            const hasError = consoleBuffer.includes('[err]');
+            const hasWarning = consoleBuffer.includes('[warn]');
+            const all = hasSuccess && hasError && hasWarning;
+            logResult('test3-result', 'Log Types', all, all ? 'All prefixes present' : 'Missing: ok=' + hasSuccess + ' err=' + hasError + ' warn=' + hasWarning);
+        };
+
+        // Test 4: Icon size
+        window.testIconSize = function() {
+            const svg14 = icon('status', 14);
+            const svg20 = icon('status', 20);
+            const has14 = svg14.includes('width="14"') && svg14.includes('height="14"');
+            const has20 = svg20.includes('width="20"') && svg20.includes('height="20"');
+            const ok = has14 && has20;
+            logResult('test4-result', 'Icon Size', ok, ok ? '14px and 20px both work' : 'Size not applied: 14=' + has14 + ' 20=' + has20);
+            const el = document.getElementById('test4-result');
+            if (el) el.insertAdjacentHTML('afterend', '<div style="display:flex;gap:16px;margin-top:8px;color:#8892a4;">' + svg14 + ' 14px | ' + svg20 + ' 20px</div>');
+        };
+
+        // Test 5: Toast creation
+        window.testToast = function() {
+            const container = document.getElementById('toastContainer');
+            const before = container.children.length;
+            showToast('test toast message', 'success');
+            const after = container.children.length;
+            const ok = after === before + 1;
+            logResult('test5-result', 'Toast Creation', ok, ok ? 'Toast element added' : 'No toast created');
+        };
+
+        // Test 6: RunGitCmd simulation
+        window.testRunGitCmd = async function() {
+            clearConsole();
+            await runGitCmd(mockStatus, 'Standard');
+            const hasRun = consoleBuffer.includes('Running mockStatus');
+            const hasResult = consoleBuffer.includes('working tree clean');
+            const ok = hasRun && hasResult;
+            logResult('test6-result', 'RunGitCmd', ok, ok ? 'Output displayed correctly' : 'Missing: run=' + hasRun + ' result=' + hasResult);
+        };
+
+        // Summary
+        window.showSummary = function() {
+            const el = document.getElementById('results');
+            const line = document.createElement('div');
+            line.style.cssText = 'margin-top:12px;padding:8px;font-weight:bold;font-size:14px;';
+            line.textContent = 'Total: ' + (passed + failed) + ' | Passed: ' + passed + ' | Failed: ' + failed;
+            line.className = failed === 0 ? 'pass' : 'fail';
+            el.appendChild(line);
+        };
+    </script>
+</body>
+</html>
