@@ -1,6 +1,6 @@
 module github.com/gitscope
 
-go 1.25.5
+go 1.24
 
 require (
 	fyne.io/fyne/v2 v2.7.3
@@ -10,7 +10,10 @@ require (
 
 require (
 	fyne.io/systray v1.12.0 // indirect
+<<<<<<< HEAD
 	git.sr.ht/~jackmordaunt/go-toast/v2 v2.0.3 // indirect
+=======
+>>>>>>> 71f26cc7305e584f248dde979afb5bfa52fa3772
 	github.com/BurntSushi/toml v1.5.0 // indirect
 	github.com/bep/debounce v1.2.1 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
@@ -58,10 +61,14 @@ require (
 	github.com/wailsapp/go-webview2 v1.0.22 // indirect
 	github.com/wailsapp/mimetype v1.4.1 // indirect
 	github.com/yuin/goldmark v1.7.8 // indirect
+<<<<<<< HEAD
 	golang.org/x/crypto v0.36.0 // indirect
 	golang.org/x/image v0.24.0 // indirect
+=======
+	golang.org/x/image v0.38.0 // indirect
+>>>>>>> 71f26cc7305e584f248dde979afb5bfa52fa3772
 	golang.org/x/net v0.38.0 // indirect
 	golang.org/x/sys v0.31.0 // indirect
-	golang.org/x/text v0.23.0 // indirect
+	golang.org/x/text v0.35.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
