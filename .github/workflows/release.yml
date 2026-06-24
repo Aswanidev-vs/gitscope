@@ -9,24 +9,28 @@ permissions:
   contents: write
 
 jobs:
-  release:
-    runs-on: ubuntu-latest
+  build:
     strategy:
       matrix:
         include:
           - goos: windows
             goarch: amd64
             ext: .exe
+            archive: zip
           - goos: linux
             goarch: amd64
             ext: ''
+            archive: tar.gz
           - goos: darwin
             goarch: amd64
             ext: ''
+            archive: tar.gz
           - goos: darwin
             goarch: arm64
             ext: ''
-    
+            archive: tar.gz
+
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -36,43 +40,94 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.23'
+          go-version: '1.25'
 
       - name: Set up Node
         uses: actions/setup-node@v4
         with:
           node-version: '20'
 
-      - name: Install Wails
-        run: go install github.com/wailsapp/wails/v2/cmd/wails@latest
-
       - name: Extract version from tag
         id: version
         run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
 
-      - name: Build
-        working-directory: gitscope-wails
-        run: wails build -platform ${{ matrix.goos }}/${{ matrix.goarch }} -o gitscope-wails${{ matrix.ext }}
+      - name: Build frontend
+        working-directory: gitscope-wails/frontend
+        run: |
+          npm install
+          npm run build
 
-      - name: Create artifact
+      - name: Build binary
+        run: |
+          GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} \
+            go build -ldflags="-s -w" \
+            -o gitscope-wails${{ matrix.ext }} \
+            ./gitscope-wails/
+
+      - name: Create archive
+        run: |
+          ARCHIVE_NAME="gitscope-wails-${{ steps.version.outputs.VERSION }}-${{ matrix.goos }}-${{ matrix.goarch }}"
+          if [ "${{ matrix.archive }}" = "zip" ]; then
+            zip "${ARCHIVE_NAME}.zip" gitscope-wails${{ matrix.ext }}
+          else
+            tar czf "${ARCHIVE_NAME}.tar.gz" gitscope-wails${{ matrix.ext }}
+          fi
+          echo "ARCHIVE=${ARCHIVE_NAME}.${{ matrix.archive }}" >> $GITHUB_ENV
+
+      - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: gitscope-wails-${{ matrix.goos }}-${{ matrix.goarch }}
-          path: gitscope-wails/build/bin/gitscope-wails${{ matrix.ext }}
+          path: ${{ env.ARCHIVE }}
 
-  publish:
-    needs: release
+  release:
+    needs: build
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
       - name: Download all artifacts
         uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          merge-multiple: true
 
-      - name: Create Release
+      - name: Generate checksums
+        run: |
+          cd artifacts
+          sha256sum * > checksums-sha256.txt
+          cat checksums-sha256.txt
+
+      - name: Generate release notes
+        id: notes
+        run: |
+          # Get previous tag
+          PREV_TAG=$(git tag --sort=-v:refname | head -2 | tail -1)
+          CURRENT_TAG="${GITHUB_REF#refs/tags/}"
+          if [ -n "$PREV_TAG" ] && [ "$PREV_TAG" != "$CURRENT_TAG" ]; then
+            echo "## Changes since ${PREV_TAG}" > notes.md
+            echo "" >> notes.md
+            git log --pretty=format:"- %s (%h)" "${PREV_TAG}..${CURRENT_TAG}" >> notes.md
+          else
+            echo "## Initial Release" > notes.md
+          fi
+          echo "" >> notes.md
+          echo "" >> notes.md
+          echo "## Downloads" >> notes.md
+          echo "| Platform | File |" >> notes.md
+          echo "|----------|------|" >> notes.md
+          echo "| Windows (x64) | \`gitscope-wails-*-windows-amd64.zip\` |" >> notes.md
+          echo "| Linux (x64) | \`gitscope-wails-*-linux-amd64.tar.gz\` |" >> notes.md
+          echo "| macOS (x64) | \`gitscope-wails-*-darwin-amd64.tar.gz\` |" >> notes.md
+          echo "| macOS (ARM) | \`gitscope-wails-*-darwin-arm64.tar.gz\` |" >> notes.md
+
+      - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          generate_release_notes: true
+          body_path: notes.md
           files: |
-            gitscope-wails-windows-amd64/*
-            gitscope-wails-linux-amd64/*
-            gitscope-wails-darwin-amd64/*
-            gitscope-wails-darwin-arm64/*
+            artifacts/*
+          generate_release_notes: true
