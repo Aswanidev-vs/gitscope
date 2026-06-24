@@ -723,3 +723,219 @@ func ResolveConflict(file string, strategy string) (string, error) {
 	}
 	return string(out) + "\n" + string(out2), nil
 }
+
+// Rebase performs git rebase operations
+func Rebase(repoPath, option, target string) (string, error) {
+	checkdir, err := os.Stat(repoPath)
+	if err != nil || !checkdir.IsDir() {
+		return "", errors.New("invalid directory path")
+	}
+
+	args := []string{"-C", repoPath, "rebase"}
+	switch option {
+	case "Continue":
+		args = append(args, "--continue")
+	case "Abort":
+		args = append(args, "--abort")
+	case "Skip":
+		args = append(args, "--skip")
+	default:
+		// Interactive or onto
+		if target != "" {
+			args = append(args, option, target)
+		} else {
+			args = append(args, option)
+		}
+	}
+
+	cmd := exec.Command("git", args...)
+	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		return string(out), fmt.Errorf("rebase failed: %v\n%s", err, string(out))
+	}
+	return string(out), nil
+}
+
+// Clean removes untracked files from the working tree
+func Clean(repoPath, option string) (string, error) {
+	checkdir, err := os.Stat(repoPath)
+	if err != nil || !checkdir.IsDir() {
+		return "", errors.New("invalid directory path")
+	}
+
+	args := []string{"-C", repoPath, "clean"}
+	switch option {
+	case "Dry Run (-n)":
+		args = append(args, "-n")
+	case "Directories (-d)":
+		args = append(args, "-d")
+	case "Force (-f)":
+		args = append(args, "-f")
+	case "Full (-fdx)":
+		args = append(args, "-fdx")
+	default:
+		// Just dry run by default for safety
+		args = append(args, "-n")
+	}
+
+	cmd := exec.Command("git", args...)
+	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		return string(out), fmt.Errorf("clean failed: %v\n%s", err, string(out))
+	}
+	return string(out), nil
+}
+
+// Show displays various types of objects (commits, tags, etc.)
+func Show(repoPath, option, target string) (string, error) {
+	checkdir, err := os.Stat(repoPath)
+	if err != nil || !checkdir.IsDir() {
+		return "", errors.New("invalid directory path")
+	}
+
+	args := []string{"-C", repoPath, "show"}
+	switch option {
+	case "Full":
+		// default show
+	case "Stats (--stat)":
+		args = append(args, "--stat")
+	case "Name Only (--name-only)":
+		args = append(args, "--name-only")
+	case "Patch (--patch)":
+		args = append(args, "--patch")
+	default:
+		if target != "" {
+			args = append(args, target)
+		}
+	}
+
+	cmd := exec.Command("git", args...)
+	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		return string(out), fmt.Errorf("show failed: %v\n%s", err, string(out))
+	}
+	return string(out), nil
+}
+
+// LsFiles shows information about files in the index and working tree
+func LsFiles(repoPath, option string) (string, error) {
+	checkdir, err := os.Stat(repoPath)
+	if err != nil || !checkdir.IsDir() {
+		return "", errors.New("invalid directory path")
+	}
+
+	args := []string{"-C", repoPath, "ls-files"}
+	switch option {
+	case "Cached (--cached)":
+		args = append(args, "--cached")
+	case "Modified (--modified)":
+		args = append(args, "--modified")
+	case "Others (--others)":
+		args = append(args, "--others", "--exclude-standard")
+	case "Deleted (--deleted)":
+		args = append(args, "--deleted")
+	case "Staged":
+		args = append(args, "--stage")
+	default:
+		// Default showing all files
+	}
+
+	cmd := exec.Command("git", args...)
+	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		return string(out), fmt.Errorf("ls-files failed: %v\n%s", err, string(out))
+	}
+	return string(out), nil
+}
+
+// Blame shows what revision and author last modified each line of a file
+func Blame(repoPath, file string) (string, error) {
+	checkdir, err := os.Stat(repoPath)
+	if err != nil || !checkdir.IsDir() {
+		return "", errors.New("invalid directory path")
+	}
+
+	if file == "" {
+		return "", errors.New("file path cannot be empty")
+	}
+
+	cmd := exec.Command("git", "-C", repoPath, "blame", file)
+	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		return string(out), fmt.Errorf("blame failed: %v\n%s", err, string(out))
+	}
+	return string(out), nil
+}
+
+// Worktree manages working trees
+func Worktree(repoPath, action, argsStr string) (string, error) {
+	checkdir, err := os.Stat(repoPath)
+	if err != nil || !checkdir.IsDir() {
+		return "", errors.New("invalid directory path")
+	}
+
+	args := []string{"-C", repoPath, "worktree"}
+
+	switch action {
+	case "List":
+		args = append(args, "list")
+	case "Add":
+		parts := strings.Fields(argsStr)
+		if len(parts) < 2 {
+			return "", errors.New("usage: worktree add <path> <branch>")
+		}
+		args = append(args, "add", parts[0], parts[1])
+	case "Remove":
+		if argsStr == "" {
+			return "", errors.New("worktree name/path required")
+		}
+		args = append(args, "remove", argsStr)
+	case "Prune":
+		args = append(args, "prune")
+	default:
+		return "", errors.New("unknown worktree action")
+	}
+
+	cmd := exec.Command("git", args...)
+	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		return string(out), fmt.Errorf("worktree failed: %v\n%s", err, string(out))
+	}
+	return string(out), nil
+}
+
+// Shortlog shows commit summary in a user-friendly format
+func Shortlog(repoPath, option string) (string, error) {
+	checkdir, err := os.Stat(repoPath)
+	if err != nil || !checkdir.IsDir() {
+		return "", errors.New("invalid directory path")
+	}
+
+	args := []string{"-C", repoPath, "shortlog"}
+	switch option {
+	case "Summary (-s)":
+		args = append(args, "-s")
+	case "By email (-e)":
+		args = append(args, "-e")
+	case "Numeric (-n)":
+		args = append(args, "-n")
+	case "All (-a)":
+		args = append(args, "-a")
+	default:
+		// default shortlog
+	}
+
+	cmd := exec.Command("git", args...)
+	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		return string(out), fmt.Errorf("shortlog failed: %v\n%s", err, string(out))
+	}
+	return string(out), nil
+}

@@ -1,0 +1,579 @@
+*, *::before, *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+:root {
+    --sidebar-width: 60px;
+    --bg-primary: #1b2636;
+    --bg-secondary: #233044;
+    --bg-card: #2a3a4e;
+    --bg-hover: #324a62;
+    --text-primary: #e8eaed;
+    --text-secondary: #9aa0a6;
+    --accent: #9400d3;
+    --accent-hover: #a855f7;
+    --border: #3a4a5e;
+    --success: #22c55e;
+    --danger: #ef4444;
+    --warning: #f59e0b;
+    --font: "Nunito", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+}
+
+html, body {
+    height: 100%;
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    font-family: var(--font);
+    overflow: hidden;
+    user-select: none;
+}
+
+@font-face {
+    font-family: "Nunito";
+    font-style: normal;
+    font-weight: 400;
+    src: local(""), url("assets/fonts/nunito-v16-latin-regular.woff2") format("woff2");
+}
+
+@font-face {
+    font-family: "Nunito";
+    font-style: normal;
+    font-weight: 700;
+    src: local(""), url("assets/fonts/nunito-v16-latin-regular.woff2") format("woff2");
+}
+
+#app {
+    display: flex;
+    height: 100vh;
+    width: 100vw;
+}
+
+/* Sidebar */
+.sidebar {
+    width: var(--sidebar-width);
+    background: var(--bg-secondary);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 12px 0;
+    gap: 4px;
+    border-right: 1px solid var(--border);
+    flex-shrink: 0;
+    z-index: 10;
+}
+
+.sidebar-btn {
+    width: 44px;
+    height: 44px;
+    border: none;
+    background: transparent;
+    color: var(--text-secondary);
+    cursor: pointer;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    transition: all 0.15s ease;
+    position: relative;
+}
+
+.sidebar-btn:hover {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+}
+
+.sidebar-btn.active {
+    background: var(--accent);
+    color: white;
+}
+
+.sidebar-btn[data-tooltip]:hover::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    left: 52px;
+    background: #111;
+    color: #fff;
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 12px;
+    white-space: nowrap;
+    pointer-events: none;
+    z-index: 100;
+}
+
+/* Main layout */
+.main-area {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+/* Top bar */
+.top-bar {
+    display: flex;
+    align-items: center;
+    padding: 10px 20px;
+    background: var(--bg-secondary);
+    border-bottom: 1px solid var(--border);
+    gap: 12px;
+    flex-shrink: 0;
+}
+
+.top-bar h2 {
+    font-size: 16px;
+    font-weight: 700;
+}
+
+.top-bar .repo-path {
+    font-size: 12px;
+    color: var(--text-secondary);
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.top-bar .badge {
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 10px;
+    background: var(--bg-card);
+    color: var(--text-secondary);
+}
+
+/* Content */
+.content {
+    flex: 1;
+    display: flex;
+    overflow: hidden;
+}
+
+/* Category sidebar */
+.cat-sidebar {
+    width: 140px;
+    background: var(--bg-secondary);
+    border-right: 1px solid var(--border);
+    padding: 8px 0;
+    flex-shrink: 0;
+    overflow-y: auto;
+}
+
+.cat-sidebar .cat-header {
+    font-size: 11px;
+    text-transform: uppercase;
+    color: var(--text-secondary);
+    padding: 8px 12px 4px;
+    letter-spacing: 0.5px;
+}
+
+.cat-btn {
+    display: block;
+    width: 100%;
+    padding: 8px 12px;
+    border: none;
+    background: transparent;
+    color: var(--text-secondary);
+    cursor: pointer;
+    text-align: left;
+    font-size: 13px;
+    font-family: var(--font);
+    transition: all 0.1s;
+}
+
+.cat-btn:hover {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+}
+
+.cat-btn.active {
+    background: var(--accent);
+    color: white;
+}
+
+/* Page area */
+.page-area {
+    flex: 1;
+    padding: 20px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Grid for buttons */
+.btn-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 10px;
+    margin-bottom: 16px;
+}
+
+.git-btn {
+    padding: 12px 8px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--bg-card);
+    color: var(--text-primary);
+    cursor: pointer;
+    font-size: 13px;
+    font-family: var(--font);
+    transition: all 0.15s;
+    text-align: center;
+}
+
+.git-btn:hover {
+    background: var(--accent);
+    border-color: var(--accent);
+}
+
+.git-btn.danger:hover {
+    background: var(--danger);
+    border-color: var(--danger);
+}
+
+/* Console output */
+.console-panel {
+    border-top: 1px solid var(--border);
+    background: #0d1117;
+    flex-shrink: 0;
+}
+
+.console-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 6px 16px;
+    background: var(--bg-secondary);
+}
+
+.console-header span {
+    font-size: 12px;
+    color: var(--text-secondary);
+}
+
+.console-header button {
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    font-size: 12px;
+    padding: 2px 8px;
+    border-radius: 4px;
+}
+
+.console-header button:hover {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+}
+
+.console-output {
+    padding: 12px 16px;
+    font-family: "Cascadia Code", "Fira Code", monospace;
+    font-size: 12px;
+    color: #c9d1d9;
+    max-height: 180px;
+    min-height: 60px;
+    overflow-y: auto;
+    white-space: pre-wrap;
+    word-break: break-all;
+    line-height: 1.5;
+}
+
+/* Select / Input styling */
+select, input, textarea {
+    background: var(--bg-card);
+    color: var(--text-primary);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 8px 12px;
+    font-size: 13px;
+    font-family: var(--font);
+    outline: none;
+}
+
+select:focus, input:focus, textarea:focus {
+    border-color: var(--accent);
+}
+
+select {
+    cursor: pointer;
+}
+
+/* Dialog / Modal */
+.modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.modal {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+    min-width: 360px;
+    max-width: 500px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+}
+
+.modal h3 {
+    margin-bottom: 16px;
+    font-size: 16px;
+}
+
+.modal .field {
+    margin-bottom: 12px;
+}
+
+.modal .field label {
+    display: block;
+    font-size: 12px;
+    color: var(--text-secondary);
+    margin-bottom: 4px;
+}
+
+.modal .field input, .modal .field select {
+    width: 100%;
+}
+
+.modal-actions {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+    margin-top: 16px;
+}
+
+.btn {
+    padding: 8px 20px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 13px;
+    font-family: var(--font);
+    transition: all 0.15s;
+}
+
+.btn-primary {
+    background: var(--accent);
+    color: white;
+}
+
+.btn-primary:hover {
+    background: var(--accent-hover);
+}
+
+.btn-secondary {
+    background: var(--bg-card);
+    color: var(--text-primary);
+    border: 1px solid var(--border);
+}
+
+.btn-secondary:hover {
+    background: var(--bg-hover);
+}
+
+.btn-danger {
+    background: var(--danger);
+    color: white;
+}
+
+/* Info / status messages */
+.info-msg {
+    padding: 10px 16px;
+    border-radius: 8px;
+    background: var(--bg-card);
+    margin-bottom: 12px;
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+.info-msg.success {
+    border-left: 3px solid var(--success);
+}
+
+.info-msg.error {
+    border-left: 3px solid var(--danger);
+}
+
+.info-msg.warning {
+    border-left: 3px solid var(--warning);
+}
+
+/* Section title */
+.section-title {
+    font-size: 14px;
+    font-weight: 700;
+    margin-bottom: 12px;
+    color: var(--text-primary);
+}
+
+/* Repo page */
+.repo-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.repo-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px;
+}
+
+.repo-card h4 {
+    font-size: 14px;
+    margin-bottom: 8px;
+}
+
+.repo-card textarea {
+    width: 100%;
+    min-height: 80px;
+    margin-bottom: 8px;
+    resize: vertical;
+}
+
+/* Docs page */
+.doc-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.doc-btn {
+    padding: 8px 16px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--bg-card);
+    color: var(--text-primary);
+    cursor: pointer;
+    font-size: 13px;
+    font-family: var(--font);
+    transition: all 0.15s;
+}
+
+.doc-btn:hover {
+    background: var(--accent);
+    border-color: var(--accent);
+}
+
+.doc-btn.active {
+    background: var(--accent);
+    border-color: var(--accent);
+}
+
+.doc-content {
+    margin-top: 16px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 20px;
+    line-height: 1.7;
+    font-size: 14px;
+    white-space: pre-wrap;
+    overflow-y: auto;
+    max-height: 400px;
+}
+
+.doc-content h1 {
+    font-size: 18px;
+    margin-bottom: 12px;
+    color: var(--accent-hover);
+}
+
+/* About page */
+.about-page {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    gap: 8px;
+    height: 100%;
+}
+
+.about-page img {
+    width: 80px;
+    height: 80px;
+    border-radius: 16px;
+    margin-bottom: 8px;
+}
+
+.about-page h2 {
+    font-size: 20px;
+}
+
+.about-page p {
+    font-size: 13px;
+    color: var(--text-secondary);
+    max-width: 400px;
+}
+
+.about-page a {
+    color: var(--accent-hover);
+    text-decoration: none;
+    font-size: 14px;
+}
+
+.about-page a:hover {
+    text-decoration: underline;
+}
+
+/* Loading spinner */
+.spinner {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    border: 2px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.6s linear infinite;
+    vertical-align: middle;
+    margin-right: 6px;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Dashboard two-column */
+.dashboard-layout {
+    display: flex;
+    flex: 1;
+    gap: 16px;
+    overflow: hidden;
+}
+
+.dashboard-left {
+    width: 140px;
+    flex-shrink: 0;
+}
+
+.dashboard-right {
+    flex: 1;
+    overflow-y: auto;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--border);
+    border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--text-secondary);
+}

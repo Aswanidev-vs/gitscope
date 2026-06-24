@@ -18,30 +18,45 @@ import (
 	"fyne.io/fyne/v2/widget"
 
 	"github.com/gitscope/internal/doc"
-	"github.com/gitscope/internal/git"
 	"github.com/gitscope/internal/state"
 )
 
+func windowsShellPath() string {
+	if runtime.GOOS != "windows" {
+		return ""
+	}
+
+	if comspec := strings.TrimSpace(os.Getenv("ComSpec")); comspec != "" {
+		return comspec
+	}
+
+	systemRoot := strings.TrimSpace(os.Getenv("SystemRoot"))
+	if systemRoot == "" {
+		systemRoot = `C:\Windows`
+	}
+	return filepath.Join(systemRoot, "System32", "cmd.exe")
+}
+
 func RullshellCommand(line string) *exec.Cmd {
 	if runtime.GOOS == "windows" {
-		return exec.Command("cmd", "/C", line)
-
+		return exec.Command(windowsShellPath(), "/C", line)
 	}
 	return exec.Command("sh", "-c", line)
 }
+
 func NewRepoCmd(w fyne.Window, repoPath string, cmdText string) fyne.CanvasObject {
 	if repoPath == "" {
 		dialog.ShowError(errors.New("No repository path selected"), w)
 		return nil
 	}
 
+	repoPath = filepath.Clean(repoPath)
 	if err := os.MkdirAll(repoPath, 0755); err != nil {
 		dialog.ShowError(fmt.Errorf("Failed to create directory: %v", err), w)
 		return nil
 	}
 
 	state.RepoPath = repoPath
-
 	progress := dialog.NewProgressInfinite("Running Commands", "Please wait while commands are executing...", w)
 
 	go func() {
@@ -58,55 +73,39 @@ func NewRepoCmd(w fyne.Window, repoPath string, cmdText string) fyne.CanvasObjec
 
 			fmt.Println("Running:", line)
 
+			var cmd *exec.Cmd
 			if strings.HasPrefix(line, "git commit") {
 				msg := ""
 				if parts := strings.SplitN(line, "-m", 2); len(parts) == 2 {
 					msg = strings.Trim(parts[1], " \"'")
 				}
-
-				output, err := git.Commit(msg, "Standard")
-				outStr := string(output)
-
-				// ✅ Ignore harmless commit warnings
-				if strings.Contains(outStr, "no changes added to commit") ||
-					strings.Contains(outStr, "no staged changes to commit") {
-					fmt.Println("⚠️ Ignored: no new changes to commit.")
-					continue
-				}
-
-				if err != nil {
-					errMsg := fmt.Sprintf("❌ Commit failed: %v\n%s", err, output)
-					fmt.Println(errMsg)
-					allErrors = append(allErrors, errMsg)
-				} else {
-					fmt.Println("✅ Commit executed:", output)
-				}
-				continue
+				cmd = exec.Command("git", "-C", repoPath, "commit", "-m", msg)
+			} else {
+				cmd = RullshellCommand(line)
+				cmd.Dir = repoPath
 			}
 
-			cmd := exec.Command("cmd", "/C", line)
 			cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
-			cmd.Dir = repoPath
-			cmd.Stdout = nil
-			cmd.Stderr = nil
 			output, err := cmd.CombinedOutput()
 			outStr := strings.TrimSpace(string(output))
 
 			if err != nil {
 				if strings.Contains(outStr, "already exists") ||
 					strings.Contains(outStr, "nothing to commit") ||
-					strings.Contains(outStr, "fatal: destination path") {
-					fmt.Println("⚠️ Ignored non-fatal error:", outStr)
+					strings.Contains(outStr, "fatal: destination path") ||
+					strings.Contains(outStr, "no changes added to commit") ||
+					strings.Contains(outStr, "no staged changes to commit") {
+					fmt.Println("Ignored non-fatal error:", outStr)
 					continue
 				}
 
-				errMsg := fmt.Sprintf("❌ Error running: %s\nOutput:\n%s", line, outStr)
+				errMsg := fmt.Sprintf("Error running: %s\nError: %v\nOutput:\n%s", line, err, outStr)
 				fmt.Println(errMsg)
 				allErrors = append(allErrors, errMsg)
 				continue
 			}
 
-			fmt.Println("✅ Executed:", line)
+			fmt.Println("Executed:", line)
 			if outStr != "" {
 				fmt.Println("Output:", outStr)
 			}
@@ -118,16 +117,16 @@ func NewRepoCmd(w fyne.Window, repoPath string, cmdText string) fyne.CanvasObjec
 			fyne.Do(func() {
 				dialog.ShowError(fmt.Errorf("Some commands failed:\n\n%s", strings.Join(allErrors, "\n\n")), w)
 			})
-
 		} else {
 			fyne.Do(func() {
 				dialog.ShowInformation("Success", "All commands executed successfully.", w)
 			})
-
 		}
 	}()
+
 	return nil
 }
+
 func ListPush(repoPath string) ([]string, error) {
 	if repoPath == "" {
 		return nil, errors.New("repository path cannot be empty")
@@ -135,7 +134,6 @@ func ListPush(repoPath string) ([]string, error) {
 
 	cmd := exec.Command("git", "-C", repoPath, "branch", "--list")
 	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
-
 	cmd.Dir = repoPath
 
 	output, err := cmd.Output()
@@ -150,7 +148,6 @@ func ListPush(repoPath string) ([]string, error) {
 		if line == "" {
 			continue
 		}
-		// Remove leading "* " from current branch
 		if after, ok := strings.CutPrefix(line, "* "); ok {
 			line = after
 		}
@@ -160,7 +157,6 @@ func ListPush(repoPath string) ([]string, error) {
 }
 
 func BranchSelector(repoPath string, w fyne.Window) (fyne.CanvasObject, func() string) {
-
 	stop := make(chan struct{})
 
 	selectEntry := widget.NewSelectEntry([]string{"Loading..."})
@@ -209,7 +205,6 @@ func BranchSelector(repoPath string, w fyne.Window) (fyne.CanvasObject, func() s
 		}
 	}()
 
-	// stop watcher automatically when window closes
 	w.SetOnClosed(func() {
 		close(stop)
 	})
@@ -222,7 +217,6 @@ func BranchSelector(repoPath string, w fyne.Window) (fyne.CanvasObject, func() s
 	return ui, getSelectedBranch
 }
 
-// Helper: compares two slices (order-sensitive)
 func slicesEqual(a, b []string) bool {
 	if len(a) != len(b) {
 		return false
@@ -235,9 +229,8 @@ func slicesEqual(a, b []string) bool {
 	return true
 }
 
-// OptionSelector creates a UI component for selecting from a list of static options.
 func OptionSelector(options []string) (fyne.CanvasObject, func() string) {
-	selected := options[0] // Default to the first option
+	selected := options[0]
 	selectWidget := widget.NewSelect(options, func(s string) {
 		selected = s
 	})
@@ -256,7 +249,6 @@ func ExistingRepoCmd(w fyne.Window, repoPath string, cmdText string) {
 		return
 	}
 
-	// Validate repository path exists
 	if _, err := os.Stat(repoPath); err != nil {
 		if os.IsNotExist(err) {
 			dialog.ShowError(fmt.Errorf("repository path does not exist: %s", repoPath), w)
@@ -266,20 +258,17 @@ func ExistingRepoCmd(w fyne.Window, repoPath string, cmdText string) {
 		return
 	}
 
-	// Validate that the path is an initialized Git repository
 	if !IsInitialized(repoPath) {
 		dialog.ShowError(fmt.Errorf("path is not a git repository: %s", repoPath), w)
 		return
 	}
 
-	// Find Git executable path
 	gitPath := getGitPath()
 	if gitPath == "" {
 		dialog.ShowError(errors.New("Git is not installed or not found in PATH. Please install Git and try again."), w)
 		return
 	}
 
-	// Initialize progress bar
 	progress := dialog.NewProgressInfinite("Running Commands", "Please wait while git commands execute...", w)
 
 	go func() {
@@ -298,7 +287,6 @@ func ExistingRepoCmd(w fyne.Window, repoPath string, cmdText string) {
 
 			var cmd *exec.Cmd
 			if strings.HasPrefix(line, "git ") {
-				// Parse Git command
 				args := strings.Fields(line)
 				if len(args) > 1 {
 					cmd = exec.Command(gitPath, args[1:]...)
@@ -306,56 +294,49 @@ func ExistingRepoCmd(w fyne.Window, repoPath string, cmdText string) {
 					cmd = exec.Command(gitPath)
 				}
 			} else {
-				// For non-Git commands, use cmd /C
-				cmd = exec.Command("cmd", "/C", line)
+				cmd = RullshellCommand(line)
 			}
 
-			// CRITICAL: Set the working directory to the repository path
 			cmd.Dir = repoPath
 			cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
 
-			// Run the command and capture combined output (stdout + stderr)
 			output, err := cmd.CombinedOutput()
 			outStr := strings.TrimSpace(string(output))
 			fmt.Printf("Command output: %q, Error: %v\n", outStr, err)
 
 			if err != nil {
-				// Ignore non-fatal Git errors
 				if strings.Contains(outStr, "already exists") ||
 					strings.Contains(outStr, "nothing to commit") ||
 					strings.Contains(outStr, "fatal: destination path") ||
 					strings.Contains(outStr, "has no upstream branch") ||
 					strings.Contains(outStr, "Everything up-to-date") ||
 					strings.Contains(outStr, "src refspec main does not match any") {
-					fmt.Println("⚠️ Ignored non-fatal error:", outStr)
+					fmt.Println("Ignored non-fatal error:", outStr)
 					continue
 				}
 
 				errorMsg := fmt.Sprintf("Command: %s\nError: %v\nOutput: %s", line, err, outStr)
 				allErrors = append(allErrors, errorMsg)
-				// Optional: break if a command fails
-				// break
 			} else {
-				fmt.Println("✅ Executed:", line)
+				fmt.Println("Executed:", line)
 				if outStr != "" {
 					fmt.Println("Output:", outStr)
 				}
 			}
 		}
 
-		// After the command loop finishes...
 		fyne.Do(func() {
-			progress.Hide() // Hide progress immediately on UI thread
+			progress.Hide()
 
 			if len(allErrors) > 0 {
-				fmt.Println("❌ Some commands failed.")
+				fmt.Println("Some commands failed.")
 				errorDetail := strings.Join(allErrors, "\n\n")
 				dialog.ShowError(
 					fmt.Errorf("The following commands failed:\n\n%s", errorDetail),
 					w,
 				)
 			} else {
-				fmt.Println("✅ All commands executed successfully.")
+				fmt.Println("All commands executed successfully.")
 				dialog.ShowInformation(
 					"Success",
 					"All commands executed successfully.",
@@ -365,6 +346,7 @@ func ExistingRepoCmd(w fyne.Window, repoPath string, cmdText string) {
 		})
 	}()
 }
+
 func GetPreviousCommit() (string, error) {
 	repo := state.RepoPath
 	checkdir, err := os.Stat(repo)
@@ -379,6 +361,7 @@ func GetPreviousCommit() (string, error) {
 	}
 	return strings.TrimSpace(string(out)), nil
 }
+
 func IsInitialized(repoPath string) bool {
 	gitDir := filepath.Join(repoPath, ".git")
 	info, err := os.Stat(gitDir)
@@ -389,16 +372,14 @@ func IsInitialized(repoPath string) bool {
 }
 
 func getGitPath() string {
-	// Try common paths on Windows
 	paths := []string{
 		"C:\\Program Files\\Git\\bin\\git.exe",
 		"C:\\Program Files (x86)\\Git\\bin\\git.exe",
 		"C:\\Git\\bin\\git.exe",
-		"git", // if in PATH
+		"git",
 	}
 	for _, p := range paths {
 		if p == "git" {
-			// Check if git is in PATH
 			cmd := exec.Command("where", "git")
 			cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
 			if err := cmd.Run(); err == nil {
@@ -412,6 +393,7 @@ func getGitPath() string {
 	}
 	return ""
 }
+
 func Decision(title string) fyne.CanvasObject {
 	switch title {
 	case "Init":
@@ -454,6 +436,20 @@ func Decision(title string) fyne.CanvasObject {
 		return doc.Tag()
 	case "Cherry-pick":
 		return doc.CherryPick()
+	case "Rebase":
+		return doc.Rebase()
+	case "Clean":
+		return doc.Clean()
+	case "Show":
+		return doc.Show()
+	case "Ls-files":
+		return doc.LsFiles()
+	case "Worktree":
+		return doc.Worktree()
+	case "Shortlog":
+		return doc.Shortlog()
+	case "Blame":
+		return doc.Blame()
 	default:
 		return widget.NewLabel("Unknown Document")
 	}

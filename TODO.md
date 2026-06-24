@@ -1,55 +1,21 @@
-# GitScope UI Improvements - TODO
+# TODO — Modernize Wails-Port UI
 
-## Steps (In Progress):
+## Step 1
+Update `wails-port/frontend/src/style.css`:
+- Add `:focus-visible` styles for standard controls (buttons, inputs, textarea, select)
+- Improve modal content styling to cover `select` and consistent spacing
 
-### 1. **✅ Create this TODO.md** - Track progress.
+## Step 2
+Update `wails-port/frontend/src/style.css`:
+- Move/standardize docs detail `<pre>` styling by introducing a CSS class (e.g. `.docs-pre`)
 
-### 2. **✅ Restructure Dashboard (`internal/ui/fyne_views.go` dashBoardPage)**
-   - HSplit: Left buttons groups (Local, Commit, History, Remote, Branch, Other), Right scrollable output.
-   - Use VBox/Grid for groups with icons/spacing.
-   - Responsive, no manual Resize/Move. **Complete**
+## Step 3
+Update `wails-port/frontend/src/main.js`:
+- Remove inline styles for docs detail `<pre>` and replace with the new class
 
-### 3. **✅ Fix RepositoryPage (`fyne_views.go`)**
-   - Proper VBox layout for repo setup buttons/labels. **Complete: Added centered title icon/spacer/padding**
-
-### 4. **Visual Enhancements (fyne_views.go, fyne_app.go)**
-   - Add icons to buttons.
-   - Better spacing, padding, Max/Scroll containers.
-   - Consistent styling.
-
-**Progress: 6/7**
-
-### 4. **Visual Enhancements (fyne_views.go, fyne_app.go)**
-   - Add icons to buttons.
-   - Better spacing, padding, Max/Scroll containers.
-   - Consistent styling.
-
-### 5. **Improve Other Pages**
-   - Docs/Settings: Better scrolling/centering.
-
-### 6. **Test**
-   - go run main.go
-   - Resize window, test all buttons/pages.
-
-### 7. **✅ Complete** - attempt_completion.
-
-**Progress: 2/7**
-
-### 3. **Fix RepositoryPage (`fyne_views.go`)**
-   - Proper VBox layout for repo setup buttons/labels.
-
-### 4. **Visual Enhancements (fyne_views.go, fyne_app.go)**
-   - Add icons to buttons.
-   - Better spacing, padding, Max/Scroll containers.
-   - Consistent styling.
-
-### 5. **Improve Other Pages**
-   - Docs/Settings: Better scrolling/centering.
-
-### 6. **Test**
-   - go run main.go
-   - Resize window, test all buttons/pages.
-
-### 7. **✅ Complete** - attempt_completion.
-
-**Progress: 1/7**
+## Step 4
+Quick manual verification
+- Sidebar navigation still switches pages
+- Dashboard modals render and controls are styled
+- Docs detail view renders correctly
+- Console output remains functional
