@@ -7,7 +7,6 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
-	"syscall"
 
 	"github.com/gitscope/internal/state"
 )
@@ -20,7 +19,7 @@ func Init() (string, error) {
 	}
 
 	cmd := exec.Command("git", "-C", repo, "init")
-	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
+	hideWindow(cmd)
 	out, err := cmd.Output()
 	return string(out), err
 }
@@ -42,7 +41,7 @@ func Status(option string) (string, error) {
 	}
 
 	cmd := exec.Command("git", args...)
-	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
+	hideWindow(cmd)
 	out, err := cmd.CombinedOutput()
 	return string(out), err
 }
@@ -62,7 +61,7 @@ func Commit(msg, option string) (string, error) {
 
 	// Validate repo path
 	checkCmd := exec.Command("git", "-C", repo, "rev-parse", "--is-inside-work-tree")
-	checkCmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
+	hideWindow(checkCmd)
 	if err := checkCmd.Run(); err != nil {
 		return "", errors.New("invalid Git repository path")
 	}
@@ -80,14 +79,14 @@ func Commit(msg, option string) (string, error) {
 
 	if !skipStageCheck {
 		statusCmd := exec.Command("git", "-C", repo, "diff", "--cached", "--quiet")
-		statusCmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
+		hideWindow(statusCmd)
 		if err := statusCmd.Run(); err == nil {
 			return "", errors.New("no staged changes to commit")
 		}
 	}
 
 	cmd := exec.Command("git", args...)
-	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
+	hideWindow(cmd)
 	out, err := cmd.CombinedOutput()
 
 	if err != nil {
@@ -122,7 +121,7 @@ func Stage(option string) (string, error) {
 	}
 
 	cmd := exec.Command("git", args...)
-	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
+	hideWindow(cmd)
 	out, err := cmd.CombinedOutput()
 
 	if err != nil {
@@ -144,28 +143,28 @@ func Push(repoPath, branch string) (string, error) {
 	}
 
 	cmd := exec.Command("git", "-C", repo, "push", "-u", "origin", branch)
-	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
+	hideWindow(cmd)
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		// Check if push failed because branch is behind remote
 		if strings.Contains(string(out), "non-fast-forward") || strings.Contains(string(out), "behind its remote") {
 			// Switch to the branch
 			checkoutCmd := exec.Command("git", "-C", repo, "checkout", branch)
-			checkoutCmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
+			hideWindow(checkoutCmd)
 			checkoutOut, checkoutErr := checkoutCmd.CombinedOutput()
 			if checkoutErr != nil {
 				return string(checkoutOut), fmt.Errorf("checkout failed before pull: %v\n%s", checkoutErr, string(checkoutOut))
 			}
 			// Pull first to integrate remote changes
 			pullCmd := exec.Command("git", "-C", repo, "pull", "origin", branch, "--no-edit")
-			pullCmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
+			hideWindow(pullCmd)
 			pullOut, pullErr := pullCmd.CombinedOutput()
 			if pullErr != nil {
 				return string(pullOut), fmt.Errorf("pull failed before push: %v\n%s", pullErr, string(pullOut))
 			}
 			// Try push again
 			pushCmd := exec.Command("git", "-C", repo, "push", "-u", "origin", branch)
-			pushCmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
+			hideWindow(pushCmd)
 			out2, err2 := pushCmd.CombinedOutput()
 			if err2 != nil {
 				return string(out2), fmt.Errorf("push failed after pull: %v\n%s", err2, string(out2))
@@ -194,7 +193,7 @@ func Log(repoPath, option string) (string, error) {
 		args = append(args, "--oneline")
 	}
 	cmd := exec.Command("git", args...)
-	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
+	hideWindow(cmd)
 	out, err := cmd.CombinedOutput()
 
 	if err != nil {
@@ -216,14 +215,14 @@ func Revert(commitHash, option string) (string, error) {
 
 	// 1️⃣ Validate repository
 	checkRepo := exec.Command("git", "-C", repo, "rev-parse", "--is-inside-work-tree")
-	checkRepo.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
+	hideWindow(checkRepo)
 	if err := checkRepo.Run(); err != nil {
 		return "", errors.New("invalid Git repository path")
 	}
 
 	// 2️⃣ Check for uncommitted changes before revert
 	checkChanges := exec.Command("git", "-C", repo, "status", "--porcelain")
-	checkChanges.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
+	hideWindow(checkChanges)
 	out, _ := checkChanges.Output()
 	if strings.TrimSpace(string(out)) != "" {
 		return "", errors.New("uncommitted changes present — please commit or stash before reverting")
@@ -239,7 +238,7 @@ func Revert(commitHash, option string) (string, error) {
 		args = append(args, "--no-edit", commitHash)
 	}
 	cmd := exec.Command("git", args...)
-	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
+	hideWindow(cmd)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return string(output), fmt.Errorf("revert failed: %v\n%s", err, string(output))
@@ -258,7 +257,7 @@ func Clone(repoPath, cloneURL string) (string, error) {
 	cmd := exec.Command("git", "-C", repoPath, "clone", cloneURL)
 
 	// Hide window on Windows
-	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
+	hideWindow(cmd)
 
 	out, err := cmd.CombinedOutput()
 	if err != nil {
@@ -276,14 +275,14 @@ func CreateBranch(repoPath, branchname string) (string, error) {
 		return "", errors.New("invalid directory path")
 	}
 	cmd := exec.Command("git", "-C", repo, "branch", branchname)
-	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
+	hideWindow(cmd)
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		return string(out), fmt.Errorf("Creating New Branch failed:%v\n%s", err, string(out))
 	}
 	// Set upstream to origin/branchname
 	pushCmd := exec.Command("git", "-C", repo, "push", "-u", "origin", branchname)
-	pushCmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
+	hideWindow(pushCmd)
 	pushOut, pushErr := pushCmd.CombinedOutput()
 	if pushErr != nil {
 		return string(pushOut), fmt.Errorf("Creating New Branch succeeded, but setting upstream failed:%v\n%s", pushErr, string(pushOut))
@@ -298,7 +297,7 @@ func DeleteBranch(repoPath, branchname string) (string, error) {
 		return "", errors.New("invalid directory path")
 	}
 	cmd := exec.Command("git", "-C", repo, "branch", "-d", branchname)
-	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
+	hideWindow(cmd)
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		return string(out), fmt.Errorf("Creating New Branch failed:%v\n%s", err, string(out))
@@ -313,7 +312,7 @@ func Pull(repoPath, branch string) (string, error) {
 		return "", errors.New("invalid directory path")
 	}
 	cmd := exec.Command("git", "-C", repo, "pull", "origin", branch)
-	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
+	hideWindow(cmd)
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		return string(out), fmt.Errorf("An issue occurred while pulling: %v\n%s", err, string(out))
@@ -338,7 +337,7 @@ func Reflog(repoPath, option string) (string, error) {
 		args = append(args, "--date=relative")
 	}
 	cmd := exec.Command("git", args...)
-	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
+	hideWindow(cmd)
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		return string(out), fmt.Errorf("An issue occurred while reflog: %v\n%s", err, string(out))
@@ -352,7 +351,7 @@ func SwitchBranch(repoPath, branchname string) (string, error) {
 		return "", errors.New("invalid directory path")
 	}
 	cmd := exec.Command("git", "-C", repoPath, "switch", branchname)
-	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
+	hideWindow(cmd)
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		return string(out), fmt.Errorf("switch branch failed: %v\n%s", err, string(out))
@@ -363,7 +362,7 @@ func SwitchBranch(repoPath, branchname string) (string, error) {
 func BranchRename(oldname, newname string) (string, error) {
 	repo := state.RepoPath
 	cmd := exec.Command("git", "-C", repo, "branch", "-m", oldname, newname)
-	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
+	hideWindow(cmd)
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		return string(out), fmt.Errorf("branch rename failed: %v\n%s", err, string(out))
@@ -426,7 +425,7 @@ func GitRemote(action string, args string) (string, error) {
 		return "", fmt.Errorf("unknown action: %s", action)
 	}
 
-	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
+	hideWindow(cmd)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return string(output), fmt.Errorf("git remote %s failed: %w", action, err)
@@ -455,7 +454,7 @@ func Diff(option string) (string, error) {
 		// default to unstaged
 	}
 	cmd := exec.Command("git", args...)
-	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
+	hideWindow(cmd)
 	out, err := cmd.CombinedOutput()
 	return string(out), err
 }
@@ -467,7 +466,7 @@ func Reset(mode, target string) (string, error) {
 	}
 	// git reset <mode> <target>
 	cmd := exec.Command("git", "-C", repo, "reset", mode, target)
-	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
+	hideWindow(cmd)
 	out, err := cmd.CombinedOutput()
 	return string(out), err
 }
@@ -484,7 +483,7 @@ func Fetch(repoPath, option string) (string, error) {
 		args = append(args, option) // Allow specifying a remote
 	}
 	cmd := exec.Command("git", args...)
-	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
+	hideWindow(cmd)
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		return string(out), fmt.Errorf("fetch failed: %v\n%s", err, string(out))
@@ -501,7 +500,7 @@ func Stash(repoPath, action string) (string, error) {
 		return "", errors.New("invalid directory path")
 	}
 	args := []string{"-C", repoPath, "stash"}
-	
+
 	switch strings.ToLower(action) {
 	case "pop":
 		args = append(args, "pop")
@@ -516,9 +515,9 @@ func Stash(repoPath, action string) (string, error) {
 	default:
 		args = append(args, action)
 	}
-	
+
 	cmd := exec.Command("git", args...)
-	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
+	hideWindow(cmd)
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		return string(out), fmt.Errorf("stash %s failed: %v\n%s", action, err, string(out))
@@ -538,7 +537,7 @@ func Merge(repoPath, branchname string) (string, error) {
 		return "", errors.New("branch name cannot be empty")
 	}
 	cmd := exec.Command("git", "-C", repoPath, "merge", branchname)
-	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
+	hideWindow(cmd)
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		return string(out), fmt.Errorf("merge failed: %v\n%s", err, string(out))
@@ -551,7 +550,7 @@ func Tag(repoPath, action, tagname string) (string, error) {
 	if err != nil || !checkdir.IsDir() {
 		return "", errors.New("invalid directory path")
 	}
-	
+
 	args := []string{"-C", repoPath}
 	if action == "push" {
 		if tagname == "" {
@@ -574,7 +573,7 @@ func Tag(repoPath, action, tagname string) (string, error) {
 	}
 
 	cmd := exec.Command("git", args...)
-	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
+	hideWindow(cmd)
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		return string(out), fmt.Errorf("%s failed: %v\n%s", action, err, string(out))
@@ -603,7 +602,7 @@ func MagicSync() (string, error) {
 	// 1. Stash changes
 	log.WriteString("Step 1: Stashing local changes...\n")
 	cmd := exec.Command("git", "-C", repo, "stash")
-	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
+	hideWindow(cmd)
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		log.WriteString(fmt.Sprintf("(stash note: %v)\n", err))
@@ -613,7 +612,7 @@ func MagicSync() (string, error) {
 	// 2. Fetch
 	log.WriteString("\nStep 2: Fetching from origin...\n")
 	cmd = exec.Command("git", "-C", repo, "fetch")
-	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
+	hideWindow(cmd)
 	out, err = cmd.CombinedOutput()
 	if err != nil {
 		log.WriteString(fmt.Sprintf("(fetch note: %v)\n", err))
@@ -623,7 +622,7 @@ func MagicSync() (string, error) {
 	// 3. Pull Rebase
 	log.WriteString("\nStep 3: Pulling with rebase...\n")
 	cmd = exec.Command("git", "-C", repo, "pull", "--rebase")
-	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
+	hideWindow(cmd)
 	out, err = cmd.CombinedOutput()
 	log.Write(out)
 	if err != nil {
@@ -633,7 +632,7 @@ func MagicSync() (string, error) {
 	// 4. Stash Pop
 	log.WriteString("\nStep 4: Popping stash...\n")
 	cmd = exec.Command("git", "-C", repo, "stash", "pop")
-	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
+	hideWindow(cmd)
 	out, _ = cmd.CombinedOutput()
 	log.Write(out)
 
@@ -643,7 +642,7 @@ func MagicSync() (string, error) {
 func UndoLastCommit() (string, error) {
 	repo := state.RepoPath
 	cmd := exec.Command("git", "-C", repo, "reset", "--soft", "HEAD~1")
-	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
+	hideWindow(cmd)
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		return string(out), err
@@ -654,7 +653,7 @@ func UndoLastCommit() (string, error) {
 func CherryPick(hash string) (string, error) {
 	repo := state.RepoPath
 	cmd := exec.Command("git", "-C", repo, "cherry-pick", hash)
-	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
+	hideWindow(cmd)
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		return string(out), err
@@ -665,7 +664,7 @@ func CherryPick(hash string) (string, error) {
 func GetConflicts() ([]string, error) {
 	repo := state.RepoPath
 	cmd := exec.Command("git", "-C", repo, "diff", "--name-only", "--diff-filter=U")
-	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
+	hideWindow(cmd)
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		return nil, err
@@ -684,7 +683,7 @@ func ResolveConflict(file string, strategy string) (string, error) {
 	repo := state.RepoPath
 	// strategy should be "ours" or "theirs"
 	cmd := exec.Command("git", "-C", repo, "checkout", "--"+strategy, file)
-	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
+	hideWindow(cmd)
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		return string(out), err
@@ -692,7 +691,7 @@ func ResolveConflict(file string, strategy string) (string, error) {
 
 	// Must add the resolved file
 	cmd = exec.Command("git", "-C", repo, "add", file)
-	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
+	hideWindow(cmd)
 	out2, err2 := cmd.CombinedOutput()
 	if err2 != nil {
 		return string(out) + "\n" + string(out2), err2
@@ -725,7 +724,7 @@ func Rebase(repoPath, option, target string) (string, error) {
 	}
 
 	cmd := exec.Command("git", args...)
-	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
+	hideWindow(cmd)
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		return string(out), fmt.Errorf("rebase failed: %v\n%s", err, string(out))
@@ -756,7 +755,7 @@ func Clean(repoPath, option string) (string, error) {
 	}
 
 	cmd := exec.Command("git", args...)
-	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
+	hideWindow(cmd)
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		return string(out), fmt.Errorf("clean failed: %v\n%s", err, string(out))
@@ -788,7 +787,7 @@ func Show(repoPath, option, target string) (string, error) {
 	}
 
 	cmd := exec.Command("git", args...)
-	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
+	hideWindow(cmd)
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		return string(out), fmt.Errorf("show failed: %v\n%s", err, string(out))
@@ -820,7 +819,7 @@ func LsFiles(repoPath, option string) (string, error) {
 	}
 
 	cmd := exec.Command("git", args...)
-	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
+	hideWindow(cmd)
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		return string(out), fmt.Errorf("ls-files failed: %v\n%s", err, string(out))
@@ -840,7 +839,7 @@ func Blame(repoPath, file string) (string, error) {
 	}
 
 	cmd := exec.Command("git", "-C", repoPath, "blame", file)
-	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
+	hideWindow(cmd)
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		return string(out), fmt.Errorf("blame failed: %v\n%s", err, string(out))
@@ -878,7 +877,7 @@ func Worktree(repoPath, action, argsStr string) (string, error) {
 	}
 
 	cmd := exec.Command("git", args...)
-	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
+	hideWindow(cmd)
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		return string(out), fmt.Errorf("worktree failed: %v\n%s", err, string(out))
@@ -908,7 +907,7 @@ func Shortlog(repoPath, option string) (string, error) {
 	}
 
 	cmd := exec.Command("git", args...)
-	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
+	hideWindow(cmd)
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		return string(out), fmt.Errorf("shortlog failed: %v\n%s", err, string(out))

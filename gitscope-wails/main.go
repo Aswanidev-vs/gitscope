@@ -3,7 +3,6 @@ package main
 import (
 	"embed"
 	"os/exec"
-	"syscall"
 
 	"github.com/wailsapp/wails/v2"
 	"github.com/wailsapp/wails/v2/pkg/options"
@@ -46,7 +45,7 @@ func main() {
 
 func isGitAvailable() bool {
 	cmd := exec.Command("git", "--version")
-	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
+	hideWindow(cmd)
 	err := cmd.Run()
 	return err == nil
 }

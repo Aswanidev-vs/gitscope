@@ -7,7 +7,6 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
-	"syscall"
 
 	"github.com/gitscope/internal/git"
 	"github.com/gitscope/internal/state"
@@ -28,7 +27,7 @@ func (a *App) startup(ctx context.Context) {
 
 func (a *App) IsGitAvailable() bool {
 	cmd := exec.Command("git", "--version")
-	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
+	hideWindow(cmd)
 	return cmd.Run() == nil
 }
 
@@ -300,7 +299,7 @@ func (a *App) GetBranches() ([]string, error) {
 		return nil, fmt.Errorf("no repository selected")
 	}
 	cmd := exec.Command("git", "-C", state.RepoPath, "branch", "--list")
-	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
+	hideWindow(cmd)
 	out, err := cmd.Output()
 	if err != nil {
 		return nil, err
@@ -322,7 +321,7 @@ func (a *App) GetCurrentBranch() (string, error) {
 		return "", fmt.Errorf("no repository selected")
 	}
 	cmd := exec.Command("git", "-C", state.RepoPath, "branch", "--show-current")
-	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
+	hideWindow(cmd)
 	out, err := cmd.Output()
 	if err != nil {
 		return "", err
@@ -372,7 +371,7 @@ func (a *App) RunCommands(cmdText string) (string, error) {
 			cmd = exec.Command("cmd", "/C", line)
 		}
 		cmd.Dir = state.RepoPath
-		cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
+		hideWindow(cmd)
 		out, err := cmd.CombinedOutput()
 		log.WriteString(fmt.Sprintf("> %s\n%s\n", line, string(out)))
 		if err != nil {
