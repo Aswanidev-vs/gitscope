@@ -7,7 +7,6 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
-	"syscall"
 
 	"github.com/gitscope/internal/git"
 	"github.com/gitscope/internal/state"
@@ -28,7 +27,7 @@ func (a *App) startup(ctx context.Context) {
 
 func (a *App) IsGitAvailable() bool {
 	cmd := exec.Command("git", "--version")
-	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
+	hideWindow(cmd)
 	return cmd.Run() == nil
 }
 
@@ -65,18 +64,30 @@ func (a *App) OpenFolder() (string, error) {
 }
 
 func (a *App) Init() (string, error) {
+	if state.RepoPath == "" {
+		return "", fmt.Errorf("no repository selected")
+	}
 	return git.Init()
 }
 
 func (a *App) Status(option string) (string, error) {
+	if state.RepoPath == "" {
+		return "", fmt.Errorf("no repository selected")
+	}
 	return git.Status(option)
 }
 
 func (a *App) Stage(option string) (string, error) {
+	if state.RepoPath == "" {
+		return "", fmt.Errorf("no repository selected")
+	}
 	return git.Stage(option)
 }
 
 func (a *App) Commit(msg, option string) (string, error) {
+	if state.RepoPath == "" {
+		return "", fmt.Errorf("no repository selected")
+	}
 	return git.Commit(msg, option)
 }
 
@@ -102,6 +113,9 @@ func (a *App) Log(option string) (string, error) {
 }
 
 func (a *App) Revert(hash string) (string, error) {
+	if state.RepoPath == "" {
+		return "", fmt.Errorf("no repository selected")
+	}
 	return git.Revert(hash, "--no-edit")
 }
 
@@ -134,14 +148,23 @@ func (a *App) SwitchBranch(name string) (string, error) {
 }
 
 func (a *App) BranchRename(oldName, newName string) (string, error) {
+	if state.RepoPath == "" {
+		return "", fmt.Errorf("no repository selected")
+	}
 	return git.BranchRename(oldName, newName)
 }
 
 func (a *App) Diff(option string) (string, error) {
+	if state.RepoPath == "" {
+		return "", fmt.Errorf("no repository selected")
+	}
 	return git.Diff(option)
 }
 
 func (a *App) Reset(mode, target string) (string, error) {
+	if state.RepoPath == "" {
+		return "", fmt.Errorf("no repository selected")
+	}
 	return git.Reset(mode, target)
 }
 
@@ -174,6 +197,9 @@ func (a *App) Tag(action, name string) (string, error) {
 }
 
 func (a *App) Remote(action, args string) (string, error) {
+	if state.RepoPath == "" {
+		return "", fmt.Errorf("no repository selected")
+	}
 	return git.GitRemote(action, args)
 }
 
@@ -234,22 +260,37 @@ func (a *App) Rebase(option, target string) (string, error) {
 }
 
 func (a *App) CherryPick(hash string) (string, error) {
+	if state.RepoPath == "" {
+		return "", fmt.Errorf("no repository selected")
+	}
 	return git.CherryPick(hash)
 }
 
 func (a *App) UndoLastCommit() (string, error) {
+	if state.RepoPath == "" {
+		return "", fmt.Errorf("no repository selected")
+	}
 	return git.UndoLastCommit()
 }
 
 func (a *App) MagicSync() (string, error) {
+	if state.RepoPath == "" {
+		return "", fmt.Errorf("no repository selected")
+	}
 	return git.MagicSync()
 }
 
 func (a *App) GetConflicts() ([]string, error) {
+	if state.RepoPath == "" {
+		return nil, fmt.Errorf("no repository selected")
+	}
 	return git.GetConflicts()
 }
 
 func (a *App) ResolveConflict(file, strategy string) (string, error) {
+	if state.RepoPath == "" {
+		return "", fmt.Errorf("no repository selected")
+	}
 	return git.ResolveConflict(file, strategy)
 }
 
@@ -258,7 +299,7 @@ func (a *App) GetBranches() ([]string, error) {
 		return nil, fmt.Errorf("no repository selected")
 	}
 	cmd := exec.Command("git", "-C", state.RepoPath, "branch", "--list")
-	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
+	hideWindow(cmd)
 	out, err := cmd.Output()
 	if err != nil {
 		return nil, err
@@ -280,7 +321,7 @@ func (a *App) GetCurrentBranch() (string, error) {
 		return "", fmt.Errorf("no repository selected")
 	}
 	cmd := exec.Command("git", "-C", state.RepoPath, "branch", "--show-current")
-	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
+	hideWindow(cmd)
 	out, err := cmd.Output()
 	if err != nil {
 		return "", err
@@ -330,7 +371,7 @@ func (a *App) RunCommands(cmdText string) (string, error) {
 			cmd = exec.Command("cmd", "/C", line)
 		}
 		cmd.Dir = state.RepoPath
-		cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
+		hideWindow(cmd)
 		out, err := cmd.CombinedOutput()
 		log.WriteString(fmt.Sprintf("> %s\n%s\n", line, string(out)))
 		if err != nil {

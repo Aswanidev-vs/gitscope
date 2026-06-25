@@ -725,7 +725,7 @@ func GitIgnoreButton(output *widget.Entry, w fyne.Window) *widget.Button {
 			return
 		}
 
-		path, err := git.GitIgnore(state.RepoPath, output, w)
+		path, err := helpers.GitignoreOp(state.RepoPath, output, w)
 		if err != nil {
 			dialog.ShowError(err, w)
 			return
@@ -1311,10 +1311,10 @@ func CleanButton(output *widget.Entry, w fyne.Window) fyne.CanvasObject {
 			return
 		}
 		val := map[string]string{
-			"Preview (-n)": "Dry Run (-n)",
+			"Preview (-n)":    "Dry Run (-n)",
 			"Remove Dir (-d)": "Directories (-d)",
-			"Force (-f)": "Force (-f)",
-			"Full (-fdx)": "Full (-fdx)",
+			"Force (-f)":      "Force (-f)",
+			"Full (-fdx)":     "Full (-fdx)",
 		}[cleanSelect.Selected]
 		if cleanSelect.Selected == "Preview (-n)" {
 			dialog.ShowConfirm("Preview Clean", "This will show what would be deleted without removing anything.", func(ok bool) {
@@ -1364,10 +1364,10 @@ func ShortlogButton(output *widget.Entry, w fyne.Window) fyne.CanvasObject {
 			return
 		}
 		val := map[string]string{
-			"Default":     "",
-			"Summary (-s)": "Summary (-s)",
+			"Default":       "",
+			"Summary (-s)":  "Summary (-s)",
 			"By Email (-e)": "By email (-e)",
-			"Numeric (-n)": "Numeric (-n)",
+			"Numeric (-n)":  "Numeric (-n)",
 		}[shortSelect.Selected]
 		out, err := git.Shortlog(state.RepoPath, val)
 		if err != nil {

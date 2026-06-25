@@ -593,6 +593,11 @@ label {
     line-height: 1.6;
     background: var(--bg-deep);
 }
+.console-output .cl-error   { color: #f06050; }
+.console-output .cl-success { color: var(--success); }
+.console-output .cl-warning { color: var(--warning); }
+.console-output .cl-info    { color: var(--accent); }
+.console-output .cl-default { color: var(--text-secondary); }
 
 /* ─── MODAL / DIALOG ──────────────────────────── */
 

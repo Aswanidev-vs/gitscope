@@ -394,6 +394,36 @@ func getGitPath() string {
 	return ""
 }
 
+func GitignoreOp(repoPath string, output *widget.Entry, w fyne.Window) (string, error) {
+	if repoPath == "" {
+		return "", errors.New("no repository selected")
+	}
+
+	if _, err := os.Stat(repoPath); err != nil {
+		if os.IsNotExist(err) {
+			return "", fmt.Errorf("repository path does not exist: %s", repoPath)
+		}
+		return "", fmt.Errorf("could not access path: %v", err)
+	}
+
+	if !IsInitialized(repoPath) {
+		return "", fmt.Errorf("path is not a git repository: %s", repoPath)
+	}
+
+	path := filepath.Join(repoPath, ".gitignore")
+	content, err := os.ReadFile(path)
+	if err != nil {
+		if os.IsNotExist(err) {
+			output.SetText("")
+			return path, nil
+		}
+		return "", err
+	}
+
+	output.SetText(string(content))
+	return path, nil
+}
+
 func Decision(title string) fyne.CanvasObject {
 	switch title {
 	case "Init":

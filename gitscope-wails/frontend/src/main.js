@@ -95,7 +95,7 @@ function renderShell() {
         </div>
         <div class="main-area">
             <div class="top-bar">
-                <div class="top-bar-logo">${icon('git', 20)}<h1>GitScope</h1></div>
+                <div class="top-bar-logo"><img src="./logo.png" class="top-bar-logo-img" alt="GitScope" /><h1>GitScope</h1></div>
                 <div class="top-bar-sep"></div>
                 <span class="repo-path" id="repoPath">No repository selected</span>
                 <div class="branch-badge" id="branchBadge"></div>
@@ -142,23 +142,30 @@ function navigate(page) {
 
 let consoleActive = false;
 
+function esc(str) {
+    return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
 function consoleLog(msg, type) {
+    const cls = type || 'default';
     const prefixes = { error: '[err] ', success: '[ok] ', warning: '[warn] ' };
     const line = (prefixes[type] || '') + msg;
-    consoleBuffer += line + '\n';
+    consoleBuffer += `<span class="cl-${cls}">${esc(line)}</span>\n`;
     const el = document.getElementById('consoleOutput');
     if (el) {
-        el.textContent = consoleBuffer;
+        el.innerHTML = consoleBuffer;
         el.scrollTop = el.scrollHeight;
     }
     window.console && window.console.log('[GitScope]', line);
-    try { showToast(msg, type || 'info'); } catch (_) {}
+    if (type === 'error' || type === 'warning') {
+        try { showToast(msg, type); } catch (_) {}
+    }
 }
 
 function clearConsole() {
     consoleBuffer = '';
     const el = document.getElementById('consoleOutput');
-    if (el) el.textContent = '';
+    if (el) el.innerHTML = '';
 }
 
 function setConsoleBusy(busy) {
@@ -420,8 +427,9 @@ function runStatus() {
         ${modalActions('Run', `window._statusRun()`)}
     `);
     window._statusRun = async () => {
+        const opt = document.getElementById('statusMode').value;
         document.querySelector('.modal-overlay').remove();
-        await runGitCmd(Status, document.getElementById('statusMode').value);
+        await runGitCmd(Status, opt);
     };
 }
 
@@ -435,8 +443,9 @@ function runLog() {
         ${modalActions('Run', `window._logRun()`)}
     `);
     window._logRun = async () => {
+        const opt = document.getElementById('logMode').value;
         document.querySelector('.modal-overlay').remove();
-        await runGitCmd(Log, document.getElementById('logMode').value);
+        await runGitCmd(Log, opt);
     };
 }
 
@@ -452,9 +461,10 @@ function showCommitDialog() {
     `);
     window._commitRun = async () => {
         const msg = document.getElementById('commitMsg').value.trim();
+        const opt = document.getElementById('commitMode').value;
         if (!msg) { consoleLog('Commit message cannot be empty', 'error'); return; }
         document.querySelector('.modal-overlay').remove();
-        await runGitCmd(Commit, msg, document.getElementById('commitMode').value);
+        await runGitCmd(Commit, msg, opt);
     };
 }
 
@@ -469,8 +479,9 @@ async function showPushDialog() {
         ${modalActions('Push', `window._pushRun()`)}
     `);
     window._pushRun = async () => {
+        const branch = document.getElementById('pushBranch').value;
         document.querySelector('.modal-overlay').remove();
-        await runGitCmd(Push, document.getElementById('pushBranch').value);
+        await runGitCmd(Push, branch);
     };
 }
 
@@ -485,8 +496,9 @@ async function showPullDialog() {
         ${modalActions('Pull', `window._pullRun()`)}
     `);
     window._pullRun = async () => {
+        const branch = document.getElementById('pullBranch').value;
         document.querySelector('.modal-overlay').remove();
-        await runGitCmd(Pull, document.getElementById('pullBranch').value);
+        await runGitCmd(Pull, branch);
     };
 }
 
@@ -528,8 +540,9 @@ async function showSwitchDialog() {
         ${modalActions('Switch', `window._switchRun()`)}
     `);
     window._switchRun = async () => {
+        const branch = document.getElementById('switchBranch').value;
         document.querySelector('.modal-overlay').remove();
-        await runGitCmd(SwitchBranch, document.getElementById('switchBranch').value);
+        await runGitCmd(SwitchBranch, branch);
         updateRepoInfo();
     };
 }
@@ -545,8 +558,9 @@ async function showMergeDialog() {
         ${modalActions('Merge', `window._mergeRun()`)}
     `);
     window._mergeRun = async () => {
+        const branch = document.getElementById('mergeBranch').value;
         document.querySelector('.modal-overlay').remove();
-        await runGitCmd(Merge, document.getElementById('mergeBranch').value);
+        await runGitCmd(Merge, branch);
     };
 }
 
@@ -653,8 +667,9 @@ function showDiffDialog() {
         ${modalActions('Run', `window._diffRun()`)}
     `);
     window._diffRun = async () => {
+        const opt = document.getElementById('diffMode').value;
         document.querySelector('.modal-overlay').remove();
-        await runGitCmd(Diff, document.getElementById('diffMode').value);
+        await runGitCmd(Diff, opt);
     };
 }
 
@@ -686,8 +701,9 @@ function showStashDialog() {
         ${modalActions('Run', `window._stashRun()`)}
     `);
     window._stashRun = async () => {
+        const action = document.getElementById('stashAction').value;
         document.querySelector('.modal-overlay').remove();
-        await runGitCmd(Stash, document.getElementById('stashAction').value);
+        await runGitCmd(Stash, action);
     };
 }
 
@@ -701,8 +717,9 @@ function showCleanDialog() {
         ${modalActions('Run', `window._cleanRun()`)}
     `);
     window._cleanRun = async () => {
+        const opt = document.getElementById('cleanMode').value;
         document.querySelector('.modal-overlay').remove();
-        await runGitCmd(Clean, document.getElementById('cleanMode').value);
+        await runGitCmd(Clean, opt);
     };
 }
 
@@ -862,7 +879,7 @@ async function showGitIgnoreDialog() {
 function renderAboutPage(area) {
     area.innerHTML = `
         <div class="page-area about-page">
-            <div class="about-logo">${icon('git', 32)}</div>
+            <div class="about-logo"><img src="./logo.png" class="about-logo-img" alt="GitScope" /></div>
             <h2>GitScope</h2>
             <p>A modern, lightweight Git client built with Go and Wails. Simplifies version control operations for both beginners and experienced developers.</p>
             <p style="font-size:11px;color:var(--text-muted)">Version 1.0.0</p>
