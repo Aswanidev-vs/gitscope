@@ -9,9 +9,6 @@ import (
 	"strings"
 	"syscall"
 
-	"fyne.io/fyne/v2"
-	"fyne.io/fyne/v2/dialog"
-	"fyne.io/fyne/v2/widget"
 	"github.com/gitscope/internal/state"
 )
 
@@ -374,36 +371,6 @@ func BranchRename(oldname, newname string) (string, error) {
 	return "Branch renamed from " + oldname + " to " + newname, nil
 }
 
-func GitIgnore(repoPath string, output *widget.Entry, w fyne.Window) (string, error) {
-	filePath := filepath.Join(repoPath, ".gitignore")
-
-	if _, err := os.Stat(filePath); os.IsNotExist(err) {
-		if err := os.WriteFile(filePath, []byte(output.Text), 0644); err != nil {
-			dialog.ShowError(err, w)
-			return "", err
-		}
-	}
-
-	content, err := os.ReadFile(filePath)
-	if err != nil {
-		dialog.ShowError(err, w)
-		return "", err
-	}
-
-	output.SetText(string(content))
-	return filePath, nil
-}
-
-//	func GitRemote(repo string) (string, error) {
-//		cmd := exec.Command("git", "-C", repo, "remote", "-v")
-//		cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
-//		out, err := cmd.CombinedOutput()
-//		if err != nil {
-//			return string(out), fmt.Errorf("git remote failed: %v\n%s", err, string(out))
-//		}
-//		return "failed to list git remotes for repo,select a repository", err
-//	}
-//
 // GitRemote performs git remote operations (list, add, remove) in the specified repository directory.
 func GitRemote(action string, args string) (string, error) {
 	repo := state.RepoPath
