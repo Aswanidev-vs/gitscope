@@ -80,12 +80,16 @@ jobs:
       - name: Create archive
         run: |
           ARCHIVE_NAME="gitscope-wails-${{ steps.version.outputs.VERSION }}-${{ matrix.goos }}-${{ matrix.goarch }}"
-          if [ "${{ matrix.archive }}" = "zip" ]; then
+          if [ "${{ matrix.goos }}" = "windows" ]; then
+            cp gitscope-wails${{ matrix.ext }} "${ARCHIVE_NAME}.exe"
+            echo "ARCHIVE=${ARCHIVE_NAME}.exe" >> $GITHUB_ENV
+          elif [ "${{ matrix.archive }}" = "zip" ]; then
             zip "${ARCHIVE_NAME}.zip" gitscope-wails${{ matrix.ext }}
+            echo "ARCHIVE=${ARCHIVE_NAME}.zip" >> $GITHUB_ENV
           else
             tar czf "${ARCHIVE_NAME}.tar.gz" gitscope-wails${{ matrix.ext }}
+            echo "ARCHIVE=${ARCHIVE_NAME}.tar.gz" >> $GITHUB_ENV
           fi
-          echo "ARCHIVE=${ARCHIVE_NAME}.${{ matrix.archive }}" >> $GITHUB_ENV
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
@@ -132,7 +136,7 @@ jobs:
           echo "## Downloads" >> notes.md
           echo "| Platform | File |" >> notes.md
           echo "|----------|------|" >> notes.md
-          echo "| Windows (x64) | \`gitscope-wails-*-windows-amd64.zip\` |" >> notes.md
+          echo "| Windows (x64) | \`gitscope-wails-*-windows-amd64.exe\` |" >> notes.md
           echo "| Linux (x64) | \`gitscope-wails-*-linux-amd64.tar.gz\` |" >> notes.md
           echo "| macOS (x64) | \`gitscope-wails-*-darwin-amd64.tar.gz\` |" >> notes.md
           echo "| macOS (ARM) | \`gitscope-wails-*-darwin-arm64.tar.gz\` |" >> notes.md
