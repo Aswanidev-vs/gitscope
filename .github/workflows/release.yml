@@ -2,8 +2,11 @@ name: Release
 
 on:
   push:
+    branches: [main]
     tags:
       - 'v*'
+  pull_request:
+    branches: [main]
 
 permissions:
   contents: write
@@ -47,9 +50,16 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Extract version from tag
+      - name: Extract version
         id: version
-        run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+        run: |
+          if [[ "${GITHUB_REF}" == refs/tags/v* ]]; then
+            echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+            echo "IS_TAG=true" >> $GITHUB_OUTPUT
+          else
+            echo "VERSION=${GITHUB_SHA::7}" >> $GITHUB_OUTPUT
+            echo "IS_TAG=false" >> $GITHUB_OUTPUT
+          fi
 
       - name: Build frontend
         working-directory: gitscope-wails/frontend
@@ -103,8 +113,8 @@ jobs:
 
       - name: Generate release notes
         id: notes
+        if: steps.version.outputs.IS_TAG == 'true'
         run: |
-          # Get previous tag
           PREV_TAG=$(git tag --sort=-v:refname | head -2 | tail -1)
           CURRENT_TAG="${GITHUB_REF#refs/tags/}"
           if [ -n "$PREV_TAG" ] && [ "$PREV_TAG" != "$CURRENT_TAG" ]; then
@@ -125,6 +135,7 @@ jobs:
           echo "| macOS (ARM) | \`gitscope-wails-*-darwin-arm64.tar.gz\` |" >> notes.md
 
       - name: Create GitHub Release
+        if: steps.version.outputs.IS_TAG == 'true'
         uses: softprops/action-gh-release@v2
         with:
           body_path: notes.md

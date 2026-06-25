@@ -95,7 +95,7 @@ function renderShell() {
         </div>
         <div class="main-area">
             <div class="top-bar">
-                <div class="top-bar-logo">${icon('git', 20)}<h1>GitScope</h1></div>
+                <div class="top-bar-logo"><img src="./logo.png" class="top-bar-logo-img" alt="GitScope" /><h1>GitScope</h1></div>
                 <div class="top-bar-sep"></div>
                 <span class="repo-path" id="repoPath">No repository selected</span>
                 <div class="branch-badge" id="branchBadge"></div>
@@ -142,23 +142,30 @@ function navigate(page) {
 
 let consoleActive = false;
 
+function esc(str) {
+    return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
 function consoleLog(msg, type) {
+    const cls = type || 'default';
     const prefixes = { error: '[err] ', success: '[ok] ', warning: '[warn] ' };
     const line = (prefixes[type] || '') + msg;
-    consoleBuffer += line + '\n';
+    consoleBuffer += `<span class="cl-${cls}">${esc(line)}</span>\n`;
     const el = document.getElementById('consoleOutput');
     if (el) {
-        el.textContent = consoleBuffer;
+        el.innerHTML = consoleBuffer;
         el.scrollTop = el.scrollHeight;
     }
     window.console && window.console.log('[GitScope]', line);
-    try { showToast(msg, type || 'info'); } catch (_) {}
+    if (type === 'error' || type === 'warning') {
+        try { showToast(msg, type); } catch (_) {}
+    }
 }
 
 function clearConsole() {
     consoleBuffer = '';
     const el = document.getElementById('consoleOutput');
-    if (el) el.textContent = '';
+    if (el) el.innerHTML = '';
 }
 
 function setConsoleBusy(busy) {
@@ -872,7 +879,7 @@ async function showGitIgnoreDialog() {
 function renderAboutPage(area) {
     area.innerHTML = `
         <div class="page-area about-page">
-            <div class="about-logo">${icon('git', 32)}</div>
+            <div class="about-logo"><img src="./logo.png" class="about-logo-img" alt="GitScope" /></div>
             <h2>GitScope</h2>
             <p>A modern, lightweight Git client built with Go and Wails. Simplifies version control operations for both beginners and experienced developers.</p>
             <p style="font-size:11px;color:var(--text-muted)">Version 1.0.0</p>
