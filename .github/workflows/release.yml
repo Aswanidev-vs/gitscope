@@ -13,6 +13,9 @@ permissions:
 
 jobs:
   build:
+    outputs:
+      is_tag: ${{ steps.version.outputs.IS_TAG }}
+      version: ${{ steps.version.outputs.VERSION }}
     strategy:
       matrix:
         include:
@@ -113,7 +116,7 @@ jobs:
 
       - name: Generate release notes
         id: notes
-        if: steps.version.outputs.IS_TAG == 'true'
+        if: needs.build.outputs.is_tag == 'true'
         run: |
           PREV_TAG=$(git tag --sort=-v:refname | head -2 | tail -1)
           CURRENT_TAG="${GITHUB_REF#refs/tags/}"
@@ -135,7 +138,7 @@ jobs:
           echo "| macOS (ARM) | \`gitscope-wails-*-darwin-arm64.tar.gz\` |" >> notes.md
 
       - name: Create GitHub Release
-        if: steps.version.outputs.IS_TAG == 'true'
+        if: needs.build.outputs.is_tag == 'true'
         uses: softprops/action-gh-release@v2
         with:
           body_path: notes.md
