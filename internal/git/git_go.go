@@ -535,7 +535,7 @@ func Stash(repoPath, action string) (string, error) {
 	}
 	args := []string{"-C", repoPath, "stash"}
 	
-	switch action {
+	switch strings.ToLower(action) {
 	case "pop":
 		args = append(args, "pop")
 	case "list":
@@ -544,7 +544,10 @@ func Stash(repoPath, action string) (string, error) {
 		args = append(args, "drop")
 	case "apply":
 		args = append(args, "apply")
-	default: // save
+	case "save":
+		// default stash save, no extra args
+	default:
+		args = append(args, action)
 	}
 	
 	cmd := exec.Command("git", args...)
@@ -634,21 +637,27 @@ func MagicSync() (string, error) {
 	log.WriteString("Step 1: Stashing local changes...\n")
 	cmd := exec.Command("git", "-C", repo, "stash")
 	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
-	out, _ := cmd.CombinedOutput()
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		log.WriteString(fmt.Sprintf("(stash note: %v)\n", err))
+	}
 	log.Write(out)
 
 	// 2. Fetch
 	log.WriteString("\nStep 2: Fetching from origin...\n")
 	cmd = exec.Command("git", "-C", repo, "fetch")
 	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
-	out, _ = cmd.CombinedOutput()
+	out, err = cmd.CombinedOutput()
+	if err != nil {
+		log.WriteString(fmt.Sprintf("(fetch note: %v)\n", err))
+	}
 	log.Write(out)
 
 	// 3. Pull Rebase
 	log.WriteString("\nStep 3: Pulling with rebase...\n")
 	cmd = exec.Command("git", "-C", repo, "pull", "--rebase")
 	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
-	out, err := cmd.CombinedOutput()
+	out, err = cmd.CombinedOutput()
 	log.Write(out)
 	if err != nil {
 		return log.String(), fmt.Errorf("MagicSync failed at pull: %v", err)

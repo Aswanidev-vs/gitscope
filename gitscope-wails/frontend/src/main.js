@@ -420,8 +420,9 @@ function runStatus() {
         ${modalActions('Run', `window._statusRun()`)}
     `);
     window._statusRun = async () => {
+        const opt = document.getElementById('statusMode').value;
         document.querySelector('.modal-overlay').remove();
-        await runGitCmd(Status, document.getElementById('statusMode').value);
+        await runGitCmd(Status, opt);
     };
 }
 
@@ -435,8 +436,9 @@ function runLog() {
         ${modalActions('Run', `window._logRun()`)}
     `);
     window._logRun = async () => {
+        const opt = document.getElementById('logMode').value;
         document.querySelector('.modal-overlay').remove();
-        await runGitCmd(Log, document.getElementById('logMode').value);
+        await runGitCmd(Log, opt);
     };
 }
 
@@ -452,9 +454,10 @@ function showCommitDialog() {
     `);
     window._commitRun = async () => {
         const msg = document.getElementById('commitMsg').value.trim();
+        const opt = document.getElementById('commitMode').value;
         if (!msg) { consoleLog('Commit message cannot be empty', 'error'); return; }
         document.querySelector('.modal-overlay').remove();
-        await runGitCmd(Commit, msg, document.getElementById('commitMode').value);
+        await runGitCmd(Commit, msg, opt);
     };
 }
 
@@ -469,8 +472,9 @@ async function showPushDialog() {
         ${modalActions('Push', `window._pushRun()`)}
     `);
     window._pushRun = async () => {
+        const branch = document.getElementById('pushBranch').value;
         document.querySelector('.modal-overlay').remove();
-        await runGitCmd(Push, document.getElementById('pushBranch').value);
+        await runGitCmd(Push, branch);
     };
 }
 
@@ -485,8 +489,9 @@ async function showPullDialog() {
         ${modalActions('Pull', `window._pullRun()`)}
     `);
     window._pullRun = async () => {
+        const branch = document.getElementById('pullBranch').value;
         document.querySelector('.modal-overlay').remove();
-        await runGitCmd(Pull, document.getElementById('pullBranch').value);
+        await runGitCmd(Pull, branch);
     };
 }
 
@@ -528,8 +533,9 @@ async function showSwitchDialog() {
         ${modalActions('Switch', `window._switchRun()`)}
     `);
     window._switchRun = async () => {
+        const branch = document.getElementById('switchBranch').value;
         document.querySelector('.modal-overlay').remove();
-        await runGitCmd(SwitchBranch, document.getElementById('switchBranch').value);
+        await runGitCmd(SwitchBranch, branch);
         updateRepoInfo();
     };
 }
@@ -545,8 +551,9 @@ async function showMergeDialog() {
         ${modalActions('Merge', `window._mergeRun()`)}
     `);
     window._mergeRun = async () => {
+        const branch = document.getElementById('mergeBranch').value;
         document.querySelector('.modal-overlay').remove();
-        await runGitCmd(Merge, document.getElementById('mergeBranch').value);
+        await runGitCmd(Merge, branch);
     };
 }
 
@@ -653,8 +660,9 @@ function showDiffDialog() {
         ${modalActions('Run', `window._diffRun()`)}
     `);
     window._diffRun = async () => {
+        const opt = document.getElementById('diffMode').value;
         document.querySelector('.modal-overlay').remove();
-        await runGitCmd(Diff, document.getElementById('diffMode').value);
+        await runGitCmd(Diff, opt);
     };
 }
 
@@ -686,8 +694,9 @@ function showStashDialog() {
         ${modalActions('Run', `window._stashRun()`)}
     `);
     window._stashRun = async () => {
+        const action = document.getElementById('stashAction').value;
         document.querySelector('.modal-overlay').remove();
-        await runGitCmd(Stash, document.getElementById('stashAction').value);
+        await runGitCmd(Stash, action);
     };
 }
 
@@ -701,8 +710,9 @@ function showCleanDialog() {
         ${modalActions('Run', `window._cleanRun()`)}
     `);
     window._cleanRun = async () => {
+        const opt = document.getElementById('cleanMode').value;
         document.querySelector('.modal-overlay').remove();
-        await runGitCmd(Clean, document.getElementById('cleanMode').value);
+        await runGitCmd(Clean, opt);
     };
 }
 
