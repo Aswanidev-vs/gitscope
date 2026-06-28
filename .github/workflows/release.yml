@@ -27,14 +27,6 @@ jobs:
             goarch: amd64
             ext: ''
             runner: ubuntu-latest
-          - goos: darwin
-            goarch: amd64
-            ext: ''
-            runner: macos-13
-          - goos: darwin
-            goarch: arm64
-            ext: ''
-            runner: macos-latest
 
     runs-on: ${{ matrix.runner }}
     steps:
@@ -151,8 +143,6 @@ jobs:
           echo "|----------|------|" >> notes.md
           echo "| Windows (x64) | \`gitscope-wails-*-windows-amd64.exe\` |" >> notes.md
           echo "| Linux (x64) | \`gitscope-wails-*-linux-amd64.tar.gz\` |" >> notes.md
-          echo "| macOS (x64) | \`gitscope-wails-*-darwin-amd64.tar.gz\` |" >> notes.md
-          echo "| macOS (ARM) | \`gitscope-wails-*-darwin-arm64.tar.gz\` |" >> notes.md
 
       - name: Create GitHub Release
         if: needs.build.outputs.is_tag == 'true'
