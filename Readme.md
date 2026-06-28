@@ -91,7 +91,7 @@ GitScope is ideal for developers who want a simple, cross-platform Git companion
 * **Go**: Version 1.21 or later
 * **Node.js**: Version 18 or later (for frontend build)
 * **Git**: Installed and accessible from PATH
-* **Wails CLI**: `go install github.com/wailsapp/wails/v2/cmd/wails@latest` (for development)
+* **Wails CLI**: `go install github.com/wailsapp/wails/v2/cmd/wails@latest`
 
 ---
 
@@ -103,10 +103,8 @@ GitScope is ideal for developers who want a simple, cross-platform Git companion
 git clone https://github.com/Aswanidev-vs/GitScope.git
 cd GitScope
 go mod tidy
-cd gitscope-wails/frontend
-npm install
-cd ../..
-go run ./gitscope-wails/
+cd gitscope-wails
+wails build
 ```
 
 ### **Development Mode**
@@ -121,18 +119,11 @@ This starts the Vite dev server with hot reload for the frontend and live-reload
 ### **Build Production Binary**
 
 ```bash
-cd gitscope-wails/frontend
-npm install && npm run build
-cd ../..
-go build -o gitscope-wails ./gitscope-wails/
+cd gitscope-wails
+wails build
 ```
 
-Run with:
-
-* Windows: `gitscope-wails.exe`
-* macOS/Linux: `./gitscope-wails`
-
-It also runs on every push and PR to `main` for validation (builds binaries but does not create a release).
+The binary will be at `build/bin/gitscope-wails` (or `gitscope-wails.exe` on Windows).
 
 ---
 

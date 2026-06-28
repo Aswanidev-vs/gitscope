@@ -53,6 +53,9 @@ jobs:
         with:
           node-version: '20'
 
+      - name: Install Wails
+        run: go install github.com/wailsapp/wails/v2/cmd/wails@latest
+
       - name: Extract version
         id: version
         run: |
@@ -71,11 +74,12 @@ jobs:
           npm run build
 
       - name: Build binary
+        working-directory: gitscope-wails
         run: |
-          GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} \
-            go build -ldflags="-s -w" \
-            -o gitscope-wails${{ matrix.ext }} \
-            ./gitscope-wails/
+          wails build -platform ${{ matrix.goos }}/${{ matrix.goarch }} \
+            -ldflags="-s -w" \
+            -clean
+          cp build/bin/gitscope-wails${{ matrix.ext }} ../gitscope-wails${{ matrix.ext }}
 
       - name: Create archive
         run: |
