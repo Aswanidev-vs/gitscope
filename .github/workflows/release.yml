@@ -83,6 +83,7 @@ jobs:
         run: wails build -clean
 
       - name: List build output
+        shell: bash
         run: ls -la gitscope-wails/build/bin/ || echo "build/bin not found"
 
       - name: Package binary (Unix)
