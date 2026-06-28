@@ -223,7 +223,15 @@ function showToast(msg, type) {
     const toastIconMap = { error: 'xCircle', success: 'check', warning: 'warn', info: 'code' };
     const toast = document.createElement('div');
     toast.className = `toast ${type || 'info'}`;
-    toast.innerHTML = `${icon(toastIconMap[type] || 'code', 14)}<span>${msg}</span>`;
+
+    const iconWrap = document.createElement('span');
+    iconWrap.innerHTML = icon(toastIconMap[type] || 'code', 14);
+
+    const text = document.createElement('span');
+    text.textContent = String(msg ?? '');
+
+    toast.appendChild(iconWrap);
+    toast.appendChild(text);
     container.appendChild(toast);
     setTimeout(() => toast.remove(), 3500);
 }
