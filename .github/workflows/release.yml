@@ -22,21 +22,21 @@ jobs:
           - goos: windows
             goarch: amd64
             ext: .exe
-            archive: zip
+            runner: windows-latest
           - goos: linux
             goarch: amd64
             ext: ''
-            archive: tar.gz
+            runner: ubuntu-latest
           - goos: darwin
             goarch: amd64
             ext: ''
-            archive: tar.gz
+            runner: macos-13
           - goos: darwin
             goarch: arm64
             ext: ''
-            archive: tar.gz
+            runner: macos-latest
 
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.runner }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -58,6 +58,7 @@ jobs:
 
       - name: Extract version
         id: version
+        shell: bash
         run: |
           if [[ "${GITHUB_REF}" == refs/tags/v* ]]; then
             echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
@@ -67,33 +68,26 @@ jobs:
             echo "IS_TAG=false" >> $GITHUB_OUTPUT
           fi
 
-      - name: Build frontend
-        working-directory: gitscope-wails/frontend
-        run: |
-          npm install
-          npm run build
-
       - name: Build binary
         working-directory: gitscope-wails
-        run: |
-          wails build -platform ${{ matrix.goos }}/${{ matrix.goarch }} \
-            -ldflags="-s -w" \
-            -clean
-          cp build/bin/gitscope-wails${{ matrix.ext }} ../gitscope-wails${{ matrix.ext }}
+        run: wails build -clean
 
-      - name: Create archive
+      - name: Package binary (Unix)
+        if: runner.os != 'Windows'
+        shell: bash
         run: |
           ARCHIVE_NAME="gitscope-wails-${{ steps.version.outputs.VERSION }}-${{ matrix.goos }}-${{ matrix.goarch }}"
-          if [ "${{ matrix.goos }}" = "windows" ]; then
-            cp gitscope-wails${{ matrix.ext }} "${ARCHIVE_NAME}.exe"
-            echo "ARCHIVE=${ARCHIVE_NAME}.exe" >> $GITHUB_ENV
-          elif [ "${{ matrix.archive }}" = "zip" ]; then
-            zip "${ARCHIVE_NAME}.zip" gitscope-wails${{ matrix.ext }}
-            echo "ARCHIVE=${ARCHIVE_NAME}.zip" >> $GITHUB_ENV
-          else
-            tar czf "${ARCHIVE_NAME}.tar.gz" gitscope-wails${{ matrix.ext }}
-            echo "ARCHIVE=${ARCHIVE_NAME}.tar.gz" >> $GITHUB_ENV
-          fi
+          BINARY=gitscope-wails/build/bin/gitscope-wails
+          tar czf "${ARCHIVE_NAME}.tar.gz" -C gitscope-wails/build/bin gitscope-wails
+          echo "ARCHIVE=${ARCHIVE_NAME}.tar.gz" >> $GITHUB_ENV
+
+      - name: Package binary (Windows)
+        if: runner.os == 'Windows'
+        shell: bash
+        run: |
+          ARCHIVE_NAME="gitscope-wails-${{ steps.version.outputs.VERSION }}-${{ matrix.goos }}-${{ matrix.goarch }}"
+          cp gitscope-wails/build/bin/gitscope-wails.exe "${ARCHIVE_NAME}.exe"
+          echo "ARCHIVE=${ARCHIVE_NAME}.exe" >> $GITHUB_ENV
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
