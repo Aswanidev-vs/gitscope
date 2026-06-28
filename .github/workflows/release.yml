@@ -78,13 +78,16 @@ jobs:
         working-directory: gitscope-wails
         run: wails build -clean
 
+      - name: List build output
+        run: ls -la gitscope-wails/build/bin/ || echo "build/bin not found"
+
       - name: Package binary (Unix)
         if: runner.os != 'Windows'
         shell: bash
         run: |
           ARCHIVE_NAME="gitscope-wails-${{ steps.version.outputs.VERSION }}-${{ matrix.goos }}-${{ matrix.goarch }}"
-          BINARY=gitscope-wails/build/bin/gitscope-wails
-          tar czf "${ARCHIVE_NAME}.tar.gz" -C gitscope-wails/build/bin gitscope-wails
+          BINARY=$(find gitscope-wails/build/bin -type f -name 'gitscope-wails' | head -1)
+          tar czf "${ARCHIVE_NAME}.tar.gz" -C "$(dirname "$BINARY")" "$(basename "$BINARY")"
           echo "ARCHIVE=${ARCHIVE_NAME}.tar.gz" >> $GITHUB_ENV
 
       - name: Package binary (Windows)
@@ -92,7 +95,8 @@ jobs:
         shell: bash
         run: |
           ARCHIVE_NAME="gitscope-wails-${{ steps.version.outputs.VERSION }}-${{ matrix.goos }}-${{ matrix.goarch }}"
-          cp gitscope-wails/build/bin/gitscope-wails.exe "${ARCHIVE_NAME}.exe"
+          BINARY=$(find gitscope-wails/build/bin -type f -name 'gitscope-wails.exe' | head -1)
+          cp "$BINARY" "${ARCHIVE_NAME}.exe"
           echo "ARCHIVE=${ARCHIVE_NAME}.exe" >> $GITHUB_ENV
 
       - name: Upload artifact
