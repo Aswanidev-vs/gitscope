@@ -19,8 +19,8 @@ func main() {
 
 	err := wails.Run(&options.App{
 		Title:     "GitScope",
-		Width:     1100,
-		Height:    700,
+		Width:     800,
+		Height:    500,
 		MinWidth:  800,
 		MinHeight: 500,
 		AssetServer: &assetserver.Options{
