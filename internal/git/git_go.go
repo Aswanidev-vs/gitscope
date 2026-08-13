@@ -3,7 +3,6 @@ package git
 import (
 	"errors"
 	"fmt"
-	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
@@ -13,9 +12,8 @@ import (
 
 func Init() (string, error) {
 	repo := state.RepoPath
-	checkdir, err := os.Stat(repo)
-	if err != nil || !checkdir.IsDir() {
-		return "", errors.New("invalid directory path")
+	if err := validateRepoPath(repo); err != nil {
+		return "", err
 	}
 
 	cmd := exec.Command("git", "-C", repo, "init")
@@ -25,9 +23,8 @@ func Init() (string, error) {
 }
 func Status(option string) (string, error) {
 	repo := state.RepoPath
-	checkdir, err := os.Stat(repo)
-	if err != nil || !checkdir.IsDir() {
-		return "", errors.New("invalid directory path")
+	if err := validateRepoPath(repo); err != nil {
+		return "", err
 	}
 
 	args := []string{"-C", repo, "status"}
@@ -49,21 +46,13 @@ func Status(option string) (string, error) {
 // Commit creates a new commit with the given message.
 func Commit(msg, option string) (string, error) {
 	repo := state.RepoPath
-	checkdir, err := os.Stat(repo)
-	if err != nil || !checkdir.IsDir() {
-		return "", errors.New("invalid directory path")
+	if err := validateGitRepo(repo); err != nil {
+		return "", err
 	}
 
 	msg = strings.TrimSpace(msg)
 	if msg == "" {
 		return "", errors.New("commit message cannot be empty")
-	}
-
-	// Validate repo path
-	checkCmd := exec.Command("git", "-C", repo, "rev-parse", "--is-inside-work-tree")
-	hideWindow(checkCmd)
-	if err := checkCmd.Run(); err != nil {
-		return "", errors.New("invalid Git repository path")
 	}
 
 	args := []string{"-C", repo, "commit", "-m", msg}
@@ -103,9 +92,8 @@ func Commit(msg, option string) (string, error) {
 // Stage adds files to the Git index based on the provided option.
 func Stage(option string) (string, error) {
 	repo := state.RepoPath
-	checkdir, err := os.Stat(repo)
-	if err != nil || !checkdir.IsDir() {
-		return "", errors.New("invalid directory path")
+	if err := validateRepoPath(repo); err != nil {
+		return "", err
 	}
 
 	args := []string{"-C", repo, "add"}
@@ -137,9 +125,8 @@ func Stage(option string) (string, error) {
 
 func Push(repoPath, branch string) (string, error) {
 	repo := repoPath
-	checkdir, err := os.Stat(repo)
-	if err != nil || !checkdir.IsDir() {
-		return "", errors.New("invalid directory path")
+	if err := validateRepoPath(repo); err != nil {
+		return "", err
 	}
 
 	cmd := exec.Command("git", "-C", repo, "push", "-u", "origin", branch)
@@ -177,9 +164,8 @@ func Push(repoPath, branch string) (string, error) {
 }
 func Log(repoPath, option string) (string, error) {
 	repo := repoPath
-	checkdir, err := os.Stat(repo)
-	if err != nil || !checkdir.IsDir() {
-		return "", errors.New("invalid directory path")
+	if err := validateRepoPath(repo); err != nil {
+		return "", err
 	}
 	args := []string{"-C", repo, "log"}
 	switch option {
@@ -204,20 +190,12 @@ func Log(repoPath, option string) (string, error) {
 func Revert(commitHash, option string) (string, error) {
 
 	repo := state.RepoPath
-	checkdir, err := os.Stat(repo)
-	if err != nil || !checkdir.IsDir() {
-		return "", errors.New("invalid directory path")
+	if err := validateGitRepo(repo); err != nil {
+		return "", err
 	}
 
 	if strings.TrimSpace(commitHash) == "" {
 		return "", errors.New("commit hash cannot be empty")
-	}
-
-	// 1️⃣ Validate repository
-	checkRepo := exec.Command("git", "-C", repo, "rev-parse", "--is-inside-work-tree")
-	hideWindow(checkRepo)
-	if err := checkRepo.Run(); err != nil {
-		return "", errors.New("invalid Git repository path")
 	}
 
 	// 2️⃣ Check for uncommitted changes before revert
@@ -249,12 +227,12 @@ func Clone(repoPath, cloneURL string) (string, error) {
 	parentDir := filepath.Dir(repoPath)
 
 	// Ensure parent directory exists
-	if info, err := os.Stat(parentDir); err != nil || !info.IsDir() {
+	if err := validateRepoPath(parentDir); err != nil {
 		return "", errors.New("invalid parent directory path")
 	}
 
-	// Prepare git clone command
-	cmd := exec.Command("git", "-C", repoPath, "clone", cloneURL)
+	// Clone into repoPath by running from its parent dir with the target name.
+	cmd := exec.Command("git", "-C", parentDir, "clone", cloneURL, filepath.Base(repoPath))
 
 	// Hide window on Windows
 	hideWindow(cmd)
@@ -270,9 +248,8 @@ func Clone(repoPath, cloneURL string) (string, error) {
 func CreateBranch(repoPath, branchname string) (string, error) {
 
 	repo := repoPath
-	checkdir, err := os.Stat(repo)
-	if err != nil || !checkdir.IsDir() {
-		return "", errors.New("invalid directory path")
+	if err := validateRepoPath(repo); err != nil {
+		return "", err
 	}
 	cmd := exec.Command("git", "-C", repo, "branch", branchname)
 	hideWindow(cmd)
@@ -292,24 +269,22 @@ func CreateBranch(repoPath, branchname string) (string, error) {
 }
 func DeleteBranch(repoPath, branchname string) (string, error) {
 	repo := repoPath
-	checkdir, err := os.Stat(repo)
-	if err != nil || !checkdir.IsDir() {
-		return "", errors.New("invalid directory path")
+	if err := validateRepoPath(repo); err != nil {
+		return "", err
 	}
 	cmd := exec.Command("git", "-C", repo, "branch", "-d", branchname)
 	hideWindow(cmd)
 	out, err := cmd.CombinedOutput()
 	if err != nil {
-		return string(out), fmt.Errorf("Creating New Branch failed:%v\n%s", err, string(out))
+		return string(out), fmt.Errorf("deleting branch failed:%v\n%s", err, string(out))
 	}
 	return "successfully Deleted New Branch", nil
 }
 func Pull(repoPath, branch string) (string, error) {
 
 	repo := repoPath
-	checkdir, err := os.Stat(repo)
-	if err != nil || !checkdir.IsDir() {
-		return "", errors.New("invalid directory path")
+	if err := validateRepoPath(repo); err != nil {
+		return "", err
 	}
 	cmd := exec.Command("git", "-C", repo, "pull", "origin", branch)
 	hideWindow(cmd)
@@ -325,9 +300,8 @@ func Pull(repoPath, branch string) (string, error) {
 
 func Reflog(repoPath, option string) (string, error) {
 	repo := repoPath
-	checkdir, err := os.Stat(repo)
-	if err != nil || !checkdir.IsDir() {
-		return "", errors.New("invalid directory path")
+	if err := validateRepoPath(repo); err != nil {
+		return "", err
 	}
 	args := []string{"-C", repo, "reflog"}
 
@@ -346,9 +320,8 @@ func Reflog(repoPath, option string) (string, error) {
 }
 
 func SwitchBranch(repoPath, branchname string) (string, error) {
-	checkdir, err := os.Stat(repoPath)
-	if err != nil || !checkdir.IsDir() {
-		return "", errors.New("invalid directory path")
+	if err := validateRepoPath(repoPath); err != nil {
+		return "", err
 	}
 	cmd := exec.Command("git", "-C", repoPath, "switch", branchname)
 	hideWindow(cmd)
@@ -436,9 +409,8 @@ func GitRemote(action string, args string) (string, error) {
 
 func Diff(option string) (string, error) {
 	repo := state.RepoPath
-	checkdir, err := os.Stat(repo)
-	if err != nil || !checkdir.IsDir() {
-		return "", errors.New("invalid directory path")
+	if err := validateRepoPath(repo); err != nil {
+		return "", err
 	}
 	args := []string{"-C", repo, "diff"}
 	switch option {
@@ -460,9 +432,8 @@ func Diff(option string) (string, error) {
 }
 func Reset(mode, target string) (string, error) {
 	repo := state.RepoPath
-	checkdir, err := os.Stat(repo)
-	if err != nil || !checkdir.IsDir() {
-		return "", errors.New("invalid directory path")
+	if err := validateRepoPath(repo); err != nil {
+		return "", err
 	}
 	// git reset <mode> <target>
 	cmd := exec.Command("git", "-C", repo, "reset", mode, target)
@@ -472,9 +443,8 @@ func Reset(mode, target string) (string, error) {
 }
 
 func Fetch(repoPath, option string) (string, error) {
-	checkdir, err := os.Stat(repoPath)
-	if err != nil || !checkdir.IsDir() {
-		return "", errors.New("invalid directory path")
+	if err := validateRepoPath(repoPath); err != nil {
+		return "", err
 	}
 	args := []string{"-C", repoPath, "fetch"}
 	if option == "All (--all)" {
@@ -495,9 +465,8 @@ func Fetch(repoPath, option string) (string, error) {
 }
 
 func Stash(repoPath, action string) (string, error) {
-	checkdir, err := os.Stat(repoPath)
-	if err != nil || !checkdir.IsDir() {
-		return "", errors.New("invalid directory path")
+	if err := validateRepoPath(repoPath); err != nil {
+		return "", err
 	}
 	args := []string{"-C", repoPath, "stash"}
 
@@ -529,9 +498,8 @@ func Stash(repoPath, action string) (string, error) {
 }
 
 func Merge(repoPath, branchname string) (string, error) {
-	checkdir, err := os.Stat(repoPath)
-	if err != nil || !checkdir.IsDir() {
-		return "", errors.New("invalid directory path")
+	if err := validateRepoPath(repoPath); err != nil {
+		return "", err
 	}
 	if branchname == "" {
 		return "", errors.New("branch name cannot be empty")
@@ -546,9 +514,8 @@ func Merge(repoPath, branchname string) (string, error) {
 }
 
 func Tag(repoPath, action, tagname string) (string, error) {
-	checkdir, err := os.Stat(repoPath)
-	if err != nil || !checkdir.IsDir() {
-		return "", errors.New("invalid directory path")
+	if err := validateRepoPath(repoPath); err != nil {
+		return "", err
 	}
 
 	args := []string{"-C", repoPath}
@@ -701,9 +668,8 @@ func ResolveConflict(file string, strategy string) (string, error) {
 
 // Rebase performs git rebase operations
 func Rebase(repoPath, option, target string) (string, error) {
-	checkdir, err := os.Stat(repoPath)
-	if err != nil || !checkdir.IsDir() {
-		return "", errors.New("invalid directory path")
+	if err := validateRepoPath(repoPath); err != nil {
+		return "", err
 	}
 
 	args := []string{"-C", repoPath, "rebase"}
@@ -734,9 +700,8 @@ func Rebase(repoPath, option, target string) (string, error) {
 
 // Clean removes untracked files from the working tree
 func Clean(repoPath, option string) (string, error) {
-	checkdir, err := os.Stat(repoPath)
-	if err != nil || !checkdir.IsDir() {
-		return "", errors.New("invalid directory path")
+	if err := validateRepoPath(repoPath); err != nil {
+		return "", err
 	}
 
 	args := []string{"-C", repoPath, "clean"}
@@ -765,9 +730,8 @@ func Clean(repoPath, option string) (string, error) {
 
 // Show displays various types of objects (commits, tags, etc.)
 func Show(repoPath, option, target string) (string, error) {
-	checkdir, err := os.Stat(repoPath)
-	if err != nil || !checkdir.IsDir() {
-		return "", errors.New("invalid directory path")
+	if err := validateRepoPath(repoPath); err != nil {
+		return "", err
 	}
 
 	args := []string{"-C", repoPath, "show"}
@@ -797,9 +761,8 @@ func Show(repoPath, option, target string) (string, error) {
 
 // LsFiles shows information about files in the index and working tree
 func LsFiles(repoPath, option string) (string, error) {
-	checkdir, err := os.Stat(repoPath)
-	if err != nil || !checkdir.IsDir() {
-		return "", errors.New("invalid directory path")
+	if err := validateRepoPath(repoPath); err != nil {
+		return "", err
 	}
 
 	args := []string{"-C", repoPath, "ls-files"}
@@ -829,9 +792,8 @@ func LsFiles(repoPath, option string) (string, error) {
 
 // Blame shows what revision and author last modified each line of a file
 func Blame(repoPath, file string) (string, error) {
-	checkdir, err := os.Stat(repoPath)
-	if err != nil || !checkdir.IsDir() {
-		return "", errors.New("invalid directory path")
+	if err := validateRepoPath(repoPath); err != nil {
+		return "", err
 	}
 
 	if file == "" {
@@ -849,9 +811,8 @@ func Blame(repoPath, file string) (string, error) {
 
 // Worktree manages working trees
 func Worktree(repoPath, action, argsStr string) (string, error) {
-	checkdir, err := os.Stat(repoPath)
-	if err != nil || !checkdir.IsDir() {
-		return "", errors.New("invalid directory path")
+	if err := validateRepoPath(repoPath); err != nil {
+		return "", err
 	}
 
 	args := []string{"-C", repoPath, "worktree"}
@@ -887,9 +848,8 @@ func Worktree(repoPath, action, argsStr string) (string, error) {
 
 // Shortlog shows commit summary in a user-friendly format
 func Shortlog(repoPath, option string) (string, error) {
-	checkdir, err := os.Stat(repoPath)
-	if err != nil || !checkdir.IsDir() {
-		return "", errors.New("invalid directory path")
+	if err := validateRepoPath(repoPath); err != nil {
+		return "", err
 	}
 
 	args := []string{"-C", repoPath, "shortlog"}
