@@ -874,3 +874,132 @@ func Shortlog(repoPath, option string) (string, error) {
 	}
 	return string(out), nil
 }
+
+// RemoteInfo describes a configured Git remote.
+type RemoteInfo struct {
+	Name     string
+	FetchURL string
+	PushURL  string
+}
+
+// GetRemotes lists the repository's remotes with their URLs.
+func GetRemotes(repoPath string) ([]RemoteInfo, error) {
+	if err := validateRepoPath(repoPath); err != nil {
+		return nil, err
+	}
+	cmd := exec.Command("git", "-C", repoPath, "remote", "-v")
+	hideWindow(cmd)
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		return nil, fmt.Errorf("listing remotes failed: %v\n%s", err, string(out))
+	}
+	return parseRemotes(string(out)), nil
+}
+
+// parseRemotes converts `git remote -v` output into structured entries.
+func parseRemotes(out string) []RemoteInfo {
+	byName := make(map[string]*RemoteInfo)
+	for _, line := range strings.Split(strings.TrimSpace(out), "\n") {
+		if line == "" {
+			continue
+		}
+		parts := strings.SplitN(line, "\t", 2)
+		if len(parts) != 2 {
+			continue
+		}
+		name := parts[0]
+		info, ok := byName[name]
+		if !ok {
+			info = &RemoteInfo{Name: name}
+			byName[name] = info
+		}
+		switch {
+		case strings.HasSuffix(parts[1], "(fetch)"):
+			info.FetchURL = strings.TrimSuffix(strings.TrimSpace(parts[1]), " (fetch)")
+		case strings.HasSuffix(parts[1], "(push)"):
+			info.PushURL = strings.TrimSuffix(strings.TrimSpace(parts[1]), " (push)")
+		}
+	}
+	remotes := make([]RemoteInfo, 0, len(byName))
+	for _, info := range byName {
+		remotes = append(remotes, *info)
+	}
+	return remotes
+}
+
+// GetTags lists the repository's tags.
+func GetTags(repoPath string) ([]string, error) {
+	if err := validateRepoPath(repoPath); err != nil {
+		return nil, err
+	}
+	cmd := exec.Command("git", "-C", repoPath, "tag", "--list")
+	hideWindow(cmd)
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		return nil, fmt.Errorf("listing tags failed: %v\n%s", err, string(out))
+	}
+	return parseTagList(string(out)), nil
+}
+
+func parseTagList(out string) []string {
+	var tags []string
+	for _, line := range strings.Split(strings.TrimSpace(out), "\n") {
+		if line = strings.TrimSpace(line); line != "" {
+			tags = append(tags, line)
+		}
+	}
+	return tags
+}
+
+// GetPreviousCommit returns the parent commit hash of HEAD.
+func GetPreviousCommit() (string, error) {
+	repo := state.RepoPath
+	if err := validateGitRepo(repo); err != nil {
+		return "", err
+	}
+	cmd := exec.Command("git", "-C", repo, "rev-parse", "HEAD~1")
+	hideWindow(cmd)
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		return "", fmt.Errorf("getting previous commit failed: %v\n%s", err, string(out))
+	}
+	return strings.TrimSpace(string(out)), nil
+}
+
+// ConfigGet reads a repo-local Git config value.
+func ConfigGet(key string) (string, error) {
+	repo := state.RepoPath
+	if err := validateGitRepo(repo); err != nil {
+		return "", err
+	}
+	key = strings.TrimSpace(key)
+	if key == "" || strings.ContainsAny(key, " \t\n") {
+		return "", errors.New("invalid config key")
+	}
+	cmd := exec.Command("git", "-C", repo, "config", "--get", key)
+	hideWindow(cmd)
+	out, err := cmd.Output()
+	if err != nil {
+		return "", fmt.Errorf("reading config %q failed: %v", key, err)
+	}
+	return strings.TrimSpace(string(out)), nil
+}
+
+// ConfigSet writes a repo-local Git config value.
+func ConfigSet(key, value string) (string, error) {
+	repo := state.RepoPath
+	if err := validateGitRepo(repo); err != nil {
+		return "", err
+	}
+	key = strings.TrimSpace(key)
+	if key == "" || strings.ContainsAny(key, " \t\n") {
+		return "", errors.New("invalid config key")
+	}
+	cmd := exec.Command("git", "-C", repo, "config", key, value)
+	hideWindow(cmd)
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		return string(out), fmt.Errorf("setting config %q failed: %v\n%s", key, err, string(out))
+	}
+	return "Config updated: " + key, nil
+}
