@@ -389,3 +389,38 @@ func (a *App) IsRepoInitialized() bool {
 	info, err := os.Stat(gitDir)
 	return err == nil && info.IsDir()
 }
+
+func (a *App) ConfigGet(key string) (string, error) {
+	if state.RepoPath == "" {
+		return "", fmt.Errorf("no repository selected")
+	}
+	return git.ConfigGet(key)
+}
+
+func (a *App) ConfigSet(key, value string) (string, error) {
+	if state.RepoPath == "" {
+		return "", fmt.Errorf("no repository selected")
+	}
+	return git.ConfigSet(key, value)
+}
+
+func (a *App) GetRemotes() ([]git.RemoteInfo, error) {
+	if state.RepoPath == "" {
+		return nil, fmt.Errorf("no repository selected")
+	}
+	return git.GetRemotes(state.RepoPath)
+}
+
+func (a *App) GetTags() ([]string, error) {
+	if state.RepoPath == "" {
+		return nil, fmt.Errorf("no repository selected")
+	}
+	return git.GetTags(state.RepoPath)
+}
+
+func (a *App) GetPreviousCommit() (string, error) {
+	if state.RepoPath == "" {
+		return "", fmt.Errorf("no repository selected")
+	}
+	return git.GetPreviousCommit()
+}
