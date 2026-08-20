@@ -12,28 +12,28 @@ GitScope is ideal for developers who want a simple, cross-platform Git companion
 ## **Features**
 
 * **Repository Setup**
-  Select, create, or initialize repositories using a native folder picker.
+  Select or open a local folder using a native folder picker, then initialize it as a Git repository.
 
 * **Initialization and Status**
   Initialize new Git repositories and view repository status in multiple formats (standard, short, branch).
 
 * **Staging and Committing**
-  Stage all changes and create commits with messages and options (stage-all, amend).
+  Stage all current changes from the dashboard and create commits with messages and options (stage-all, amend).
 
 * **Branch Management**
-  Create, delete, switch, and rename branches with remote upstream support.
+  Create, delete, switch, and rename local branches. New branches also attempt to configure an `origin` upstream.
 
 * **Push and Pull**
   Push commits to remotes with upstream tracking and pull changes with branch selection.
 
 * **Clone Repositories**
-  Clone any remote repository into a selected destination folder.
+  Clone a remote repository from a URL. The current clone action uses the selected repository path as its destination target.
 
 * **Logs and History**
-  View commit history in oneline, graph, or pretty format. Browse reflog entries and revert specific commits.
+  View commit history in oneline, graph, or pretty format through the console. Browse reflog entries and revert specific commits.
 
 * **Diff**
-  View unstaged, staged, named-only, or stat diffs from the dashboard.
+  View unstaged, staged, named-only, or stat diffs from the dashboard through the console.
 
 * **Stash**
   Save, pop, list, drop, or apply stashes.
@@ -81,14 +81,14 @@ GitScope is ideal for developers who want a simple, cross-platform Git companion
   Run user-defined Git command sequences for advanced workflows.
 
 * **Console Output**
-  Color-coded console panel showing command results, errors, and progress in real time.
+  Color-coded console panel showing command results, errors, and command busy state.
 
 * **Cross-Platform**
-  Runs on Windows, macOS, and Linux.
+  The Wails application includes platform-specific support for Windows, macOS, and Linux. Git must be installed and available on `PATH`.
 
 ## **Prerequisites**
 
-* **Go**: Version 1.21 or later
+* **Go**: Version 1.25 or later
 * **Node.js**: Version 18 or later (for frontend build)
 * **Git**: Installed and accessible from PATH
 * **Wails CLI**: `go install github.com/wailsapp/wails/v2/cmd/wails@latest`
@@ -149,7 +149,7 @@ The binary will be at `build/bin/gitscope-wails` (or `gitscope-wails.exe` on Win
    | Advanced | Reset, Rebase, Undo, Worktree, Conflicts |
    | Tools | Blame, Magic Sync |
 
-   You can also run custom Git commands from the Repository Setup page.
+   You can also run multiline custom commands from the Repository Setup page. Git commands are run in the selected repository directory; non-Git commands currently use the Windows `cmd /C` shell.
 
 The app uses `os/exec` to run Git commands. Ensure Git is installed and on your PATH.
 
@@ -170,7 +170,7 @@ GitScope/
 │   ├── wails.json              # Wails project config
 │   ├── hidewindow_windows.go   # Windows-specific process flags
 │   ├── hidewindow_other.go     # Cross-platform no-op
-│   ├── frontend/               # Vue/JS frontend
+│   ├── frontend/               # Vanilla JS/HTML/CSS frontend
 │   │   ├── index.html
 │   │   ├── vite.config.js
 │   │   ├── package.json
@@ -212,17 +212,33 @@ GitScope/
 * Platform-specific code (e.g., `HideWindow` on Windows) uses build tags for cross-platform compilation.
 * The frontend communicates with Go via Wails bindings — no REST/WebSocket boilerplate needed.
 * The Fyne-based GUI (`main.go`, `internal/ui/`, `utils/`) is legacy and maintained separately.
-* Automated tests run via `go test ./gitscope-wails/...`.
+* Automated Go tests can be run with `go test ./gitscope-wails/... ./internal/git/...`.
+* The frontend production bundle can be verified with `cd gitscope-wails/frontend && npm run build`.
+
+---
+
+## **Current Limitations**
+
+* The selected repository is stored only in memory for the current app session; recent repositories are not persisted yet.
+* The dashboard is command-and-console oriented. It does not yet provide a file-level changes view, individual stage/unstage controls, hunk staging, or a visual commit graph.
+* Git configuration, structured remote, tag, and previous-commit APIs exist in the Go backend, but they do not yet have dedicated frontend screens.
+* Conflict resolution currently supports only “keep mine” and “take theirs”; there is no built-in three-way merge editor.
+* The custom command runner does not provide a portable shell abstraction, cancellation, or robust shell-style parsing for quoted arguments.
+* Destructive operations such as hard reset, forced clean, branch deletion, and rebase should be used carefully because the current UI does not provide a full operation preview or recovery workflow.
 
 ---
 
 ## **Planned Improvements**
 
-* Persistent repository history across app restarts
-* GUI improvements and theme customization
-* Installer packages for each OS (via `wails build`)
-* Basic Git configuration editor (name, email, remotes)
-* Expanded automated test coverage
+* Recent repository history, favorites, and multi-repository switching
+* File-level changes workspace with per-file diff, stage/unstage, and hunk staging
+* Structured repository status dashboard with ahead/behind and conflict indicators
+* Visual commit history, branch comparison, and remote management screens
+* Git configuration editor for name, email, remotes, pull strategy, and signing settings
+* Guided clone/initialization workflow with an explicit destination picker
+* Three-way conflict editor and safer previews for destructive operations
+* Cross-platform custom command execution with cancellation and reliable argument parsing
+* GUI accessibility, theme customization, installer packages via `wails build`, and expanded frontend/backend test coverage
 
 ---
 
