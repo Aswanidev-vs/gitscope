@@ -26,6 +26,14 @@ export function Commit(arg1, arg2) {
   return window['go']['main']['App']['Commit'](arg1, arg2);
 }
 
+export function ConfigGet(arg1) {
+  return window['go']['main']['App']['ConfigGet'](arg1);
+}
+
+export function ConfigSet(arg1, arg2) {
+  return window['go']['main']['App']['ConfigSet'](arg1, arg2);
+}
+
 export function CreateBranch(arg1) {
   return window['go']['main']['App']['CreateBranch'](arg1);
 }
@@ -54,8 +62,20 @@ export function GetCurrentBranch() {
   return window['go']['main']['App']['GetCurrentBranch']();
 }
 
+export function GetPreviousCommit() {
+  return window['go']['main']['App']['GetPreviousCommit']();
+}
+
+export function GetRemotes() {
+  return window['go']['main']['App']['GetRemotes']();
+}
+
 export function GetRepoPath() {
   return window['go']['main']['App']['GetRepoPath']();
+}
+
+export function GetTags() {
+  return window['go']['main']['App']['GetTags']();
 }
 
 export function Init() {

@@ -632,16 +632,24 @@ func GetConflicts() ([]string, error) {
 	repo := state.RepoPath
 	cmd := exec.Command("git", "-C", repo, "diff", "--name-only", "--diff-filter=U")
 	hideWindow(cmd)
-	out, err := cmd.CombinedOutput()
+	// Output() reads stdout only: stderr carries warnings (e.g. autocrlf
+	// EOL notices) that CombinedOutput() would merge in and pollute the list.
+	out, err := cmd.Output()
 	if err != nil {
 		return nil, err
 	}
-	lines := strings.Split(strings.TrimSpace(string(out)), "\n")
 	var conflicts []string
-	for _, l := range lines {
-		if l != "" {
-			conflicts = append(conflicts, l)
+	for _, l := range strings.Split(strings.TrimSpace(string(out)), "\n") {
+		l = strings.TrimSpace(l)
+		if l == "" {
+			continue
 		}
+		lower := strings.ToLower(l)
+		if strings.HasPrefix(lower, "warning:") || strings.HasPrefix(lower, "error:") ||
+			strings.HasPrefix(lower, "fatal:") || strings.HasPrefix(lower, "hint:") {
+			continue
+		}
+		conflicts = append(conflicts, l)
 	}
 	return conflicts, nil
 }
