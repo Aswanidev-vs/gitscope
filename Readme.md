@@ -9,7 +9,24 @@ GitScope is a modern Git desktop client built with **Go** and **[Wails v2](https
 
 GitScope is ideal for developers who want a simple, cross-platform Git companion for everyday tasks such as committing, branching, pushing, pulling, and browsing repository history.
 
+**Version 2.0.0** introduces the complete **"Ink & Signal" UI redesign** — a warm dark editorial theme with locally bundled fonts, five pages (Repository, Dashboard, History, Docs, About), a command palette, and every view wired to real Git data through the existing Go bindings.
+
 ## **Features**
+
+* **"Ink & Signal" Redesigned UI**
+  A warm dark editorial theme (Instrument Serif · Archivo · IBM Plex Mono) with grain, glow, hairline rules, staggered motion, and a single amber accent. All fonts are bundled locally with their OFL licenses, so the app renders correctly offline.
+
+* **Command Palette**
+  Press `Ctrl/⌘ K` to search and run anything — page navigation plus all 33 commands. Keyboard-first: `1–5` jumps between pages, `/` focuses the active filter, `Esc` closes overlays.
+
+* **Repository Page**
+  Status cards (branch, ahead/behind, changes, last commit), a live file-level changes view read from `git status -s`, Stage all/Diff/Resolve shortcuts, and a commit composer with inline validation.
+
+* **History Page**
+  Real `git log` in Oneline, Graph, or Pretty formats with a text filter; click any commit to Show it in the console, copy its hash, or revert it.
+
+* **Accessibility & Safe Destructive Actions**
+  Visible focus rings, dialog focus trap with `Esc` and focus restore, `aria-live` console and toasts, `prefers-reduced-motion` support, and a required two-step confirmation for destructive operations.
 
 * **Repository Setup**
   Select or open a local folder using a native folder picker, then initialize it as a Git repository.
@@ -18,7 +35,7 @@ GitScope is ideal for developers who want a simple, cross-platform Git companion
   Initialize new Git repositories and view repository status in multiple formats (standard, short, branch).
 
 * **Staging and Committing**
-  Stage all current changes from the dashboard and create commits with messages and options (stage-all, amend).
+  Stage all changes and commit from the Repository page's composer, with inline empty-message validation and options (stage-all, amend).
 
 * **Branch Management**
   Create, delete, switch, and rename local branches. New branches also attempt to configure an `origin` upstream.
@@ -30,7 +47,7 @@ GitScope is ideal for developers who want a simple, cross-platform Git companion
   Clone a remote repository from a URL. The current clone action uses the selected repository path as its destination target.
 
 * **Logs and History**
-  View commit history in oneline, graph, or pretty format through the console. Browse reflog entries and revert specific commits.
+  The History page shows real commit history in oneline, graph, or pretty format with filtering; click a commit to show, revert, or copy it. Browse reflog entries through the console.
 
 * **Diff**
   View unstaged, staged, named-only, or stat diffs from the dashboard through the console.
@@ -72,7 +89,7 @@ GitScope is ideal for developers who want a simple, cross-platform Git companion
   One-click stash, fetch, pull --rebase, and stash pop workflow.
 
 * **Conflict Resolution**
-  Detect merge conflicts and resolve with "keep mine" or "take theirs" strategies.
+  Detect genuine unmerged paths (stderr warnings are filtered out), surface them in a dashboard counter and banner, and resolve file-by-file with Keep Mine / Take Theirs; manually edited files resolve through Stage all.
 
 * **GitIgnore Editor**
   Create or edit the `.gitignore` file directly inside the app.
@@ -116,6 +133,17 @@ wails dev
 
 This starts the Vite dev server with hot reload for the frontend and live-reload for the Go backend.
 
+### **Frontend Only (UI Preview)**
+
+The frontend has its **own** `package.json` — there is none at the repository root, so `npm run dev` must run from the frontend directory:
+
+```bash
+cd gitscope-wails/frontend
+npm run dev
+```
+
+> **Note:** outside `wails dev` the Go bindings are not injected, so the UI renders but git actions will not execute. Use `wails dev` for a fully working app.
+
 ### **Build Production Binary**
 
 ```bash
@@ -152,6 +180,15 @@ The binary will be at `build/bin/gitscope-wails` (or `gitscope-wails.exe` on Win
    You can also run multiline custom commands from the Repository Setup page. Git commands are run in the selected repository directory; non-Git commands currently use the Windows `cmd /C` shell.
 
 The app uses `os/exec` to run Git commands. Ensure Git is installed and on your PATH.
+
+**Navigation & shortcuts**
+
+| Key | Action |
+|-----|--------|
+| `Ctrl/⌘ K` | Open the command palette |
+| `1`–`5` | Repository · Dashboard · History · Docs · About |
+| `/` | Focus the current page's filter |
+| `Esc` | Close dialog/palette or defocus a field |
 
 ---
 
@@ -211,6 +248,8 @@ GitScope/
 * Global state is stored in `internal/state`, primarily `RepoPath`.
 * Platform-specific code (e.g., `HideWindow` on Windows) uses build tags for cross-platform compilation.
 * The frontend communicates with Go via Wails bindings — no REST/WebSocket boilerplate needed.
+* The frontend is a dependency-free vanilla JS design system ("Ink & Signal"); typography, color, and motion tokens live at the top of `src/style.css`, and all woff2 fonts are bundled in `src/assets/fonts` with their OFL licenses.
+* `GetConflicts()` results pass through `sanitizeConflicts()` in `main.js` so git stderr warnings can never render as conflicted files.
 * The Fyne-based GUI (`main.go`, `internal/ui/`, `utils/`) is legacy and maintained separately.
 * Automated Go tests can be run with `go test ./gitscope-wails/... ./internal/git/...`.
 * The frontend production bundle can be verified with `cd gitscope-wails/frontend && npm run build`.
@@ -220,9 +259,10 @@ GitScope/
 ## **Current Limitations**
 
 * The selected repository is stored only in memory for the current app session; recent repositories are not persisted yet.
-* The dashboard is command-and-console oriented. It does not yet provide a file-level changes view, individual stage/unstage controls, hunk staging, or a visual commit graph.
+* The Repository page provides a read-only file-level changes list (from `git status -s`) with Stage all and Diff; individual stage/unstage, hunk staging, and per-file diff views require new Go bindings, because `Stage()` only accepts `All (.)` and `Untracked (-u)`. The History page renders real log output but is not an interactive visual graph.
 * Git configuration, structured remote, tag, and previous-commit APIs exist in the Go backend, but they do not yet have dedicated frontend screens.
 * Conflict resolution currently supports only “keep mine” and “take theirs”; there is no built-in three-way merge editor.
+* Cherry-pick exposes only "Apply"; finishing or aborting a conflicted cherry-pick (`cherry-pick --continue` / `--abort`) still requires the terminal.
 * The custom command runner does not provide a portable shell abstraction, cancellation, or robust shell-style parsing for quoted arguments.
 * Destructive operations such as hard reset, forced clean, branch deletion, and rebase should be used carefully because the current UI does not provide a full operation preview or recovery workflow.
 
@@ -231,9 +271,8 @@ GitScope/
 ## **Planned Improvements**
 
 * Recent repository history, favorites, and multi-repository switching
-* File-level changes workspace with per-file diff, stage/unstage, and hunk staging
-* Structured repository status dashboard with ahead/behind and conflict indicators
-* Visual commit history, branch comparison, and remote management screens
+* Per-file stage/unstage, hunk staging, and a per-file diff viewer (requires new Go bindings)
+* Interactive visual commit graph, branch comparison, and remote management screens
 * Git configuration editor for name, email, remotes, pull strategy, and signing settings
 * Guided clone/initialization workflow with an explicit destination picker
 * Three-way conflict editor and safer previews for destructive operations
