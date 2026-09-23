@@ -271,6 +271,13 @@ kbd {
 }
 
 .brand { display: flex; align-items: center; gap: 9px; -webkit-app-region: no-drag; }
+.brand-logo {
+    width: 24px;
+    height: 24px;
+    border-radius: 6px;
+    object-fit: contain;
+    flex-shrink: 0;
+}
 .brand-name {
     font-family: var(--font-display);
     font-size: 19px;
