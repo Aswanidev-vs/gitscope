@@ -1,7 +1,7 @@
 fyne-cross windows \
   --app-id com.aswanidev.gitscope \
   -name "Gitscope" \
-  --app-version 2.0.0 \
-  --icon gitscope_logo_v6.png
+  --app-version 2.0.1 \
+  --icon gitscope-logo.png
 
-fyne-cross windows   --app-id com.aswanidev.gitscope   -name "Gitscope"   --app-version 2.0.0   --icon gitscope_logo_v6.png
+fyne-cross windows   --app-id com.aswanidev.gitscope   -name "Gitscope"   --app-version 2.0.1   --icon gitscope-logo.png

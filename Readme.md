@@ -9,7 +9,7 @@ GitScope is a modern Git desktop client built with **Go** and **[Wails v2](https
 
 GitScope is ideal for developers who want a simple, cross-platform Git companion for everyday tasks such as committing, branching, pushing, pulling, and browsing repository history.
 
-**Version 2.0.0** introduces the complete **"Ink & Signal" UI redesign** — a warm dark editorial theme with locally bundled fonts, five pages (Repository, Dashboard, History, Docs, About), a command palette, and every view wired to real Git data through the existing Go bindings.
+**Version 2.0.1** introduces the complete **"Ink & Signal" UI redesign** — a warm dark editorial theme with locally bundled fonts, five pages (Repository, Dashboard, History, Docs, About), a command palette, and every view wired to real Git data through the existing Go bindings.
 
 ## **Features**
 

@@ -537,7 +537,7 @@ function renderShell() {
         <div class="grain" aria-hidden="true"></div>
 
         <nav class="rail" aria-label="Primary">
-            <div class="rail-mark"><img src="./logo.png" alt="GitScope" /></div>
+            <div class="rail-mark"><img src="./gitscope-logo.png" alt="GitScope" /></div>
             <ul class="rail-list" role="list">
                 ${PAGES.map((p) => `
                     <li>
@@ -558,7 +558,10 @@ function renderShell() {
 
         <div class="workspace">
             <header class="topbar">
-                <div class="brand"><span class="brand-name">GitScope</span></div>
+                <div class="brand">
+                    <img class="brand-logo" src="./gitscope-logo.png" alt="GitScope" />
+                    <span class="brand-name">GitScope</span>
+                </div>
                 <div class="top-sep" aria-hidden="true"></div>
                 <div class="repo-slot">
                     <span class="repo-path mono is-empty" id="repoPath">No repository selected</span>
@@ -1645,14 +1648,14 @@ function renderDocs(root) {
 function renderAbout(root) {
     root.innerHTML = `
         <div class="about">
-            <div class="about-mark"><img src="./logo.png" alt="GitScope logo" /></div>
+            <div class="about-mark"><img src="./gitscope-logo.png" alt="GitScope logo" /></div>
             <h1 class="about-statement">Visual Git.<br /><em>Zero friction.</em></h1>
             <p class="about-lede">
                 A modern, lightweight Git desktop client built with Go and Wails v2 —
                 everything you see is GitScope's own backend, not a shell wrapper.
             </p>
             <div class="about-ledger">
-                <div class="ledger-row"><span class="ledger-key">Version</span><span class="ledger-val">2.0.0</span></div>
+                <div class="ledger-row"><span class="ledger-key">Version</span><span class="ledger-val">2.0.1</span></div>
                 <div class="ledger-row"><span class="ledger-key">Stack</span><span class="ledger-val">Go · Wails v2 · vanilla JS</span></div>
                 <div class="ledger-row"><span class="ledger-key">Backend</span><span class="ledger-val">${Object.keys(COMMANDS).length} commands · ${CATEGORY_ORDER.length} groups</span></div>
                 <div class="ledger-row"><span class="ledger-key">Git</span><span class="ledger-val">${
