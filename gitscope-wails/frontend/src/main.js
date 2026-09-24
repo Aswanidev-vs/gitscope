@@ -1657,15 +1657,10 @@ function renderAbout(root) {
             <div class="about-ledger">
                 <div class="ledger-row"><span class="ledger-key">Version</span><span class="ledger-val">2.0.1</span></div>
                 <div class="ledger-row"><span class="ledger-key">Stack</span><span class="ledger-val">Go · Wails v2 · vanilla JS</span></div>
-                <div class="ledger-row"><span class="ledger-key">Backend</span><span class="ledger-val">${Object.keys(COMMANDS).length} commands · ${CATEGORY_ORDER.length} groups</span></div>
                 <div class="ledger-row"><span class="ledger-key">Git</span><span class="ledger-val">${
                     state.gitAvailable
                         ? '<span class="ok">available on PATH</span>'
                         : '<span class="bad">not found on PATH</span>'}</span></div>
-                <div class="ledger-row"><span class="ledger-key">Repository</span><span class="ledger-val">${
-                    state.repoPath ? esc(state.repoPath) : 'none selected'}</span></div>
-                <div class="ledger-row"><span class="ledger-key">Branches</span><span class="ledger-val">${
-                    state.repoPath && state.branches.length ? esc(state.branches.join(', ')) : '—'}</span></div>
                 <div class="ledger-row"><span class="ledger-key">Shortcuts</span><span class="ledger-val">Ctrl/⌘ K · 1–5 · / · Esc</span></div>
                 <div class="ledger-row"><span class="ledger-key">License</span><span class="ledger-val">MIT</span></div>
             </div>
