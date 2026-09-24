@@ -1655,7 +1655,7 @@ function renderAbout(root) {
                 everything you see is GitScope's own backend, not a shell wrapper.
             </p>
             <div class="about-ledger">
-                <div class="ledger-row"><span class="ledger-key">Version</span><span class="ledger-val">2.0.1</span></div>
+                <div class="ledger-row"><span class="ledger-key">Version</span><span class="ledger-val">2.0.2</span></div>
                 <div class="ledger-row"><span class="ledger-key">Stack</span><span class="ledger-val">Go · Wails v2 · vanilla JS</span></div>
                 <div class="ledger-row"><span class="ledger-key">Git</span><span class="ledger-val">${
                     state.gitAvailable
